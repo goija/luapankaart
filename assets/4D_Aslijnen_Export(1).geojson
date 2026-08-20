@@ -1,0 +1,285 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.159304141998292,
+          52.29107883566183
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.163295269012452,
+          52.291091960249986
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.1647329330444345,
+          52.292404399425195
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.166127681732179,
+          52.29313934837811
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.168466567993165,
+          52.29455671549349
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.168724060058595,
+          52.29657769756397
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.167779922485352,
+          52.29827052715252
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.162651538848878,
+          52.299648363933045
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.159776210784913,
+          52.29832301695817
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.155549049377442,
+          52.29758815401763
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.156986713409425,
+          52.295107901567405
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.1598405838012695,
+          52.29232565417126
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.16584873199463,
+          52.29886103387912
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.161578655242921,
+          52.29538021120339
+        ]
+      },
+      "properties": {
+        "naam": "Naarden",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    }
+  ]
+}
