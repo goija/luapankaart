@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.18888,
+          51.3371
+        ]
+      },
+      "properties": {
+        "naam": "Schapendijk Reimerswaal",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.21922,
+          51.53191
+        ]
+      },
+      "properties": {
+        "naam": "O.L. Vrouwenkerk Tholen",
+        "kleur": "#eab308",
+        "vorm": "vierkant",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    }
+  ]
+}

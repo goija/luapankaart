@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.227241814136506,
+          52.27713340478115
+        ]
+      },
+      "properties": {
+        "naam": "tafelberg",
+        "kleur": "rgb(233, 69, 96)",
+        "vorm": "rondje",
+        "rotatie": "0"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.237951874732972,
+          52.24639990577013
+        ]
+      },
+      "properties": {
+        "naam": "de mees 27",
+        "kleur": "rgb(233, 69, 96)",
+        "vorm": "rondje",
+        "rotatie": "0"
+      }
+    }
+  ]
+}
