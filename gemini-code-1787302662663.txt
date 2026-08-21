@@ -1,0 +1,97 @@
+// ==============================================================================
+// SCILAB: HDR LENS FLARE & EXIF OVERLAY MODEL
+// Waarneming: Zonsverduistering (12 Aug 2026, 20:00 GMT+02:00)
+// Locatie: Tafelberg Blaricum (PXL_20260812_180030283.MP)
+// Camera: Google Pixel 9 (f/1.68, 6.9mm, ISO 23)
+// ==============================================================================
+clear; clc; clf;
+
+// 1. Initialisatie Figuur (HDR Zwart / Dark Mode)
+fig = gcf();
+fig.color_map = hotcolormap(128); // Gebruik een 'hot' colormap voor de HDR zonnegloed
+fig.background = 1;               // Zwarte achtergrond
+drawlater();
+
+ax = gca();
+ax.isoview = "on";
+ax.box = "off";
+ax.axes_visible = ["off", "off", "off"]; // Geen standaard assen
+ax.data_bounds = [-100, -100; 100, 100]; // Virtueel sensorvlak
+
+// 2. EXIF Data Parameters (Uit de screenshot)
+aperture = 1.68;
+focal_length = 6.9; // mm
+iso = 23;
+shutter = 1/15873;  // Zeer snelle sluitertijd
+
+// 3. Simulatie van de Lensopening (Vignettering)
+// We tekenen de grote, donkere ronde lensrand waar doorheen wordt gekeken
+theta = linspace(0, 2*%pi, 200);
+r_lens = 65; // Radius van de doorkijk
+
+// Buiten de lens maken we het pikzwart
+x_out = [-100, 100, 100, -100];
+y_out = [100, 100, -100, -100];
+xfpoly(x_out, y_out); 
+e_out = gce(); e_out.background = 1; // Zwart
+
+// De "Doorkijk" (Lensgat)
+xfpoly(r_lens * cos(theta), r_lens * sin(theta));
+e_in = gce(); e_in.background = 16; // Donkergrijs/transparant basisvlak voor de hemel
+
+// 4. HDR Zon & Lens Flare Simulatie (De overbelichte stip en halo's)
+// Positie van de zon in de lens (iets uit het midden)
+zon_x = 15; 
+zon_y = -5;
+
+// Intensiteit berekend o.b.v. lage ISO en snelle sluitertijd (geeft een scherpe, felle kern)
+core_radius = 4;
+halo_radius = 25;
+flare_radius = 45;
+
+// 4a. Grote zachte halo
+xfpoly(zon_x + halo_radius * cos(theta), zon_y + halo_radius * sin(theta));
+e_halo = gce(); e_halo.background = 64; // Oranje/Gele gloed uit de colormap
+e_halo.line_mode = "off";
+
+// 4b. Felle HDR Kern
+xfpoly(zon_x + core_radius * cos(theta), zon_y + core_radius * sin(theta));
+e_core = gce(); e_core.background = 128; // Wit/Felste kleur in colormap
+e_core.line_mode = "off";
+
+// 4c. Optische Lens Flares (Interne reflecties door f/1.68 diafragma)
+// Flare 1
+xfpoly((zon_x * -0.5) + 12 * cos(theta), (zon_y * -0.5) + 12 * sin(theta));
+e_f1 = gce(); e_f1.background = 32; e_f1.line_mode = "off";
+// Flare 2 (groter, zwakker)
+xfpoly((zon_x * -1.2) + 20 * cos(theta), (zon_y * -1.2) + 20 * sin(theta));
+e_f2 = gce(); e_f2.background = 16; e_f2.line_mode = "off";
+
+// 5. EXIF Data Overlay (Heads-Up Display)
+xstring(-95, 90, "OVERLAY: HDR OPTISCHE SIMULATIE");
+t1 = gce(); t1.font_foreground = 8; t1.font_size = 3; // Wit
+
+xstring(-95, 82, "Bestand: PXL_20260812_180030283.MP.jpg (12.5 MP Ultra HDR)");
+t2 = gce(); t2.font_foreground = 8; t2.font_size = 2;
+
+xstring(-95, 75, "Tijdstip: 12 aug 2026, 20:00 (GMT+02:00)");
+t3 = gce(); t3.font_foreground = 8; t3.font_size = 2;
+
+xstring(-95, 68, "Locatie: Blaricum (Tafelbergheide)");
+t4 = gce(); t4.font_foreground = 8; t4.font_size = 2;
+
+// Camera Specs Box
+xstring(40, -85, "CAMERA EXIF DATA");
+t5 = gce(); t5.font_foreground = 110; t5.font_size = 2; // Geel/Oranje
+
+xstring(40, -90, "Apparaat: Google Pixel 9");
+t6 = gce(); t6.font_foreground = 8; t6.font_size = 1;
+
+xstring(40, -95, "ƒ/1.68 | 1/15873 sec | 6.9 mm | ISO 23");
+t7 = gce(); t7.font_foreground = 8; t7.font_size = 1;
+
+// Kruisdraad (Reticle) voor het centrum van de lens
+xpoly([-10, 10], [0, 0], "lines", 1); gce().foreground = 8;
+xpoly([0, 0], [-10, 10], "lines", 1); gce().foreground = 8;
+
+drawnow();
