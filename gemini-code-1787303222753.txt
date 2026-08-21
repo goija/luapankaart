@@ -1,0 +1,116 @@
+// ==============================================================================
+// SCILAB: HYBRIDE SYNTHESE DASHBOARD // OPTICA & 6D VORTEX
+// Waarneming: 12 Aug 2026, 20:00 (GMT+02:00) | Tafelbergheide
+// Links: Lensfysica (Google Pixel 9) | Rechts: 64-Bit Omni-Bridge Matrix
+// ==============================================================================
+clear; clc; clf;
+
+// 1. Dashboard Initialisatie
+fig = gcf();
+fig.color_map = hotcolormap(128); // HDR mapping voor de zonne-energie
+fig.background = 1;               // Diepzwart voor maximale contrastwaarde
+drawlater();
+
+ax = gca();
+ax.isoview = "off";
+ax.box = "on";
+ax.axes_visible = ["off", "off", "off"]; 
+ax.data_bounds = [0, 0; 240, 100]; // Extra breed canvas (2.4 : 1)
+
+// ==============================================================================
+// LINKERPANEEL: FYSISCHE OPTICA (Zonsverduistering door koker)
+// ==============================================================================
+theta = linspace(0, 2*%pi, 150);
+cx_lens = 60; cy_lens = 50; r_lens = 40;
+
+// De buis/doorkijk
+xfpoly(cx_lens + r_lens * cos(theta), cy_lens + r_lens * sin(theta));
+lens_opening = gce(); lens_opening.background = 16; // Donkere hemelbasis
+
+// Zonnepositie in de lens (gebaseerd op je foto)
+zon_x = 75; zon_y = 45;
+
+// Halo (Zacht strooilicht)
+xfpoly(zon_x + 22 * cos(theta), zon_y + 22 * sin(theta));
+halo = gce(); halo.background = 64; halo.line_mode = "off";
+
+// Zonne-kern (Extreme sluitertijd 1/15873 resulteert in scherpe stip)
+xfpoly(zon_x + 3 * cos(theta), zon_y + 3 * sin(theta));
+kern = gce(); kern.background = 128; kern.line_mode = "off";
+
+// F/1.68 Optische Flares
+xfpoly((zon_x * 0.7) + 8 * cos(theta), (zon_y * 1.3) + 8 * sin(theta));
+f1 = gce(); f1.background = 32; f1.line_mode = "off";
+xfpoly((zon_x * 0.5) + 14 * cos(theta), (zon_y * 1.5) + 14 * sin(theta));
+f2 = gce(); f2.background = 16; f2.line_mode = "off";
+
+// Telemetrie Overlay Links
+xstring(5, 92, "OBSERVATIE: TAFELBERGHEIDE"); gce().font_foreground = 8;
+xstring(5, 87, "12 aug 2026 | 20:00 GMT+02:00"); gce().font_foreground = 8;
+xstring(5, 7, "Pixel 9 | f/1.68 | 1/15873s | ISO 23"); gce().font_foreground = 110;
+
+// ==============================================================================
+// RECHTERPANEEL: 6D VORTEX OMNI-BRIDGE
+// ==============================================================================
+cx_vortex = 180; cy_vortex = 50;
+
+// Zichtas naar de zon (~295 graden azimut) snijdt door de matrix
+az_rad = (90 - 295) * %pi / 180;
+xpoly([cx_vortex, cx_vortex + 50 * cos(az_rad)], [cy_vortex, cy_vortex + 50 * sin(az_rad)], "lines", 1);
+as_lijn = gce(); as_lijn.line_style = 4; as_lijn.thickness = 2; as_lijn.foreground = 110;
+xstring(cx_vortex - 45, cy_vortex + 35, "AZIMUT 295° (ECLIPSE AS)"); gce().font_foreground = 110;
+
+// Genereer de 64 knooppunten (4 ringen van 16)
+N_bits = 64; nodes_per_ring = 16;
+nodes_x = zeros(1, N_bits); nodes_y = zeros(1, N_bits);
+kleuren = zeros(1, N_bits);
+
+function col = getColor(deg)
+    if deg >= 45 & deg < 135 then col = 5;       // Rood
+    elseif deg >= 135 & deg < 225 then col = 2;  // Blauw
+    elseif deg >= 225 & deg < 315 then col = 7;  // Geel
+    else col = 3;                                // Groen
+    end
+endfunction
+
+idx = 1;
+for r = 1:4
+    straal = 8 + (r * 9); 
+    shift = (r-1) * (%pi / 8); 
+    
+    for n = 1:nodes_per_ring
+        hoek_rad = (n * 2 * %pi / nodes_per_ring) + shift;
+        nodes_x(idx) = cx_vortex + straal * cos(hoek_rad);
+        nodes_y(idx) = cy_vortex + straal * sin(hoek_rad);
+        
+        hoek_deg = modulo(hoek_rad * 180 / %pi, 360);
+        kleuren(idx) = getColor(hoek_deg);
+        idx = idx + 1;
+    end
+end
+
+// Teken verbindingen (Omni-Bridge structuur)
+for i = 1:N_bits
+    next_n = modulo(i, nodes_per_ring) + 1 + (floor((i-1)/nodes_per_ring) * nodes_per_ring);
+    xpoly([nodes_x(i), nodes_x(next_n)], [nodes_y(i), nodes_y(next_n)], "lines", 1);
+    gce().foreground = 12; // Grijze basis
+    
+    if i <= (N_bits - nodes_per_ring) then
+        jump_n = i + nodes_per_ring;
+        xpoly([nodes_x(i), nodes_x(jump_n)], [nodes_y(i), nodes_y(jump_n)], "lines", 1);
+        l_jump = gce(); l_jump.foreground = 13; l_jump.line_style = 3; 
+    end
+end
+
+// Render de 64 Bit-knooppunten
+for i = 1:N_bits
+    xpoly(nodes_x(i), nodes_y(i), "marks", 1);
+    pt = gce(); pt.mark_style = 9; pt.mark_size = 4;
+    pt.mark_foreground = kleuren(i); pt.mark_background = kleuren(i);
+end
+
+// Verbind de optische zon met het centrum van de wiskundige vortex
+xpoly([zon_x, cx_vortex], [zon_y, cy_vortex], "lines", 1);
+l_brug = gce(); l_brug.line_style = 7; l_brug.thickness = 1; l_brug.foreground = 8; // Witte stippellijn
+
+drawnow();

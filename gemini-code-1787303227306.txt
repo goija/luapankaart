@@ -1,0 +1,94 @@
+// ==============================================================================
+// SCILAB: SPLIT-SCREEN DASHBOARD // ECLIPSE OBSERVATIE
+// Waarneming: 12 Aug 2026, 20:00 (GMT+02:00) | Tafelbergheide, Blaricum
+// Links: Optische Simulatie | Rechts: EXIF & Telemetrie
+// ==============================================================================
+clear; clc; clf;
+
+// 1. Initialisatie van het brede Dashboard-canvas
+fig = gcf();
+fig.color_map = hotcolormap(128); // HDR color mapping
+fig.background = 8;               // Witte basis (zoals de Google UI panelen)
+drawlater();
+
+ax = gca();
+ax.isoview = "off";               // Vrije verhoudingen voor split-screen
+ax.box = "on";
+ax.axes_visible = ["off", "off", "off"]; 
+ax.data_bounds = [0, 0; 200, 100]; // Brede verhouding (2:1)
+
+// ==============================================================================
+// LINKERPANEEL: OPTISCHE SIMULATIE (0 tot 120 op de X-as)
+// ==============================================================================
+// Zwarte achtergrond voor de foto-weergave
+xfpoly([0, 120, 120, 0], [100, 100, 0, 0]);
+bg_left = gce(); bg_left.background = 1; // Zwart
+
+// De Koker/Doorkijk
+theta = linspace(0, 2*%pi, 150);
+center_x = 60; center_y = 50; r_lens = 35;
+xfpoly(center_x + r_lens * cos(theta), center_y + r_lens * sin(theta));
+lens_hole = gce(); lens_hole.background = 16; // Donkergrijs/lucht
+
+// De Zon & Flare (Zonsverduistering)
+zon_x = 70; zon_y = 45;
+
+// Halo
+xfpoly(zon_x + 18 * cos(theta), zon_y + 18 * sin(theta));
+halo = gce(); halo.background = 64; halo.line_mode = "off";
+
+// Kern
+xfpoly(zon_x + 3 * cos(theta), zon_y + 3 * sin(theta));
+kern = gce(); kern.background = 128; kern.line_mode = "off";
+
+// Lens Flares (Interne reflecties door f/1.68)
+xfpoly((zon_x * 0.7) + 8 * cos(theta), (zon_y * 1.3) + 8 * sin(theta));
+f1 = gce(); f1.background = 32; f1.line_mode = "off";
+xfpoly((zon_x * 0.5) + 12 * cos(theta), (zon_y * 1.5) + 12 * sin(theta));
+f2 = gce(); f2.background = 16; f2.line_mode = "off";
+
+
+// ==============================================================================
+// RECHTERPANEEL: EXIF & GEO-DATA (120 tot 200 op de X-as)
+// ==============================================================================
+// Achtergrond van het zijpaneel
+xfpoly([120, 200, 200, 120], [100, 100, 0, 0]);
+bg_right = gce(); bg_right.background = 8; // Wit
+bg_right.foreground = 1; // Zwarte scheidingslijn
+
+// Tekst en Iconografie (EXIF Data)
+xstring(125, 92, "Informatie"); 
+t_kop = gce(); t_kop.font_size = 4; t_kop.font_foreground = 1;
+
+// Datum & Tijd
+xstring(125, 80, "12 aug 2026"); 
+t_dat = gce(); t_dat.font_size = 2; t_dat.font_foreground = 5; // Rood geaccentueerd
+xstring(125, 75, "wo, 20:00  GMT+02:00"); 
+t_tijd = gce(); t_tijd.font_size = 1; t_tijd.font_foreground = 5;
+
+// Camera Specs
+xstring(125, 65, "Google Pixel 9"); 
+t_cam = gce(); t_cam.font_size = 2; t_cam.font_foreground = 5;
+xstring(125, 60, "f/1.68  1/15873  6.9 mm  ISO 23"); 
+t_spec = gce(); t_spec.font_size = 1; t_spec.font_foreground = 5;
+
+// Bestandsinfo
+xstring(125, 50, "PXL_20260812_180030283.MP.jpg"); 
+t_file = gce(); t_file.font_size = 1; t_file.font_foreground = 5;
+xstring(125, 46, "12.5 MP  3072 x 4080  Ultra HDR"); 
+t_res = gce(); t_res.font_size = 1; t_res.font_foreground = 5;
+
+// Locatie / Mini-Map abstractie
+xstring(125, 30, "Locatie: Blaricum (Tafelbergheide)"); 
+t_loc = gce(); t_loc.font_size = 2; t_loc.font_foreground = 1;
+
+// Abstracte kaart-weergave onderaan
+xfpoly([125, 195, 195, 125], [25, 25, 2, 2]);
+bg_map = gce(); bg_map.background = 13; // Lichtgroen (Topo map)
+bg_map.line_mode = "off";
+
+// Map Pin (Tafelberg)
+xpoly(160, 13, "marks", 1);
+pin = gce(); pin.mark_style = 9; pin.mark_size = 6; pin.mark_foreground = 5; // Rode marker
+
+drawnow();
