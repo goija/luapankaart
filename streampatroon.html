@@ -97,6 +97,15 @@
             <button class="rotatie-knop secundair" style="background-color:#a855f7; color:white;" onclick="acceptAnswer()">3. Host: Accepteer Antwoord</button>
         </div>
 
+        <!-- Meshnet IP Probe -->
+        <div class="paneel-titel">1b. Meshnet IP Probe & Telemetrie</div>
+        <div class="actie-row">
+            <button class="rotatie-knop" style="background-color:#d97706;" onclick="voerNetwerkProbeUit()">🔍 Voer IP Probe Uit</button>
+        </div>
+        <div id="probe-resultaten" style="margin-top:6px; font-family:monospace; font-size:10px; color:#94a3b8; background:#0f172a; padding:8px; border-radius:4px; border:1px solid #334155; display:none;">
+            <!-- Resultaten komen hier -->
+        </div>
+
         <!-- EM Resonantie Module -->
         <div class="paneel-titel">2. Elektromagnetische Resonantie</div>
         <div class="actie-row">
@@ -240,9 +249,6 @@
             if (keuze === "topo") topoLayer.addTo(achtergrondMap);
         }
 
-        function zoomMapMaxIn() { achtergrondMap.setZoom(achtergrondMap.getMaxZoom()); }
-        function zoomMapMaxUit() { achtergrondMap.setZoom(achtergrondMap.getMinZoom() || 2); }
-
         /* =========================================================================
            3. SERVERLESS WEBRTC SENSORNET (DATACHANNEL)
            ========================================================================= */
@@ -323,7 +329,6 @@
             try {
                 const msg = JSON.parse(event.data);
                 
-                // Marker Syncs
                 if (msg.type === 'add_marker') {
                     bouwVormBakenData(msg.data.lat, msg.data.lng, msg.data.naam, msg.data.kleur, msg.data.vormClass, msg.data.quatState, msg.data.id, false);
                 } else if (msg.type === 'move_marker') {
@@ -342,10 +347,7 @@
                     window.wisMarker(msg.data.id, false);
                 } else if (msg.type === 'clear_all') {
                     wisAlleBakens(false);
-                } 
-                
-                // Wereld Syncs (Quaternions over de lijn)
-                else if (msg.type === 'world_transform') {
+                } else if (msg.type === 'world_transform') {
                     wereldRotatie = msg.data.rot;
                     w_flipX = msg.data.flipX;
                     w_flipY = msg.data.flipY;
@@ -359,6 +361,55 @@
                 }
             } catch (err) { console.error("WebRTC Parse Error", err); }
             isReceivingNetworkData = false;
+        }
+
+        /* =========================================================================
+           3B. MESHNET IP PROBE & TELEMETRIE
+           ========================================================================= */
+        async function voerNetwerkProbeUit() {
+            const outputDiv = document.getElementById('probe-resultaten');
+            
+            if (!peerConnection || peerConnection.connectionState !== 'connected') {
+                outputDiv.style.display = 'block';
+                outputDiv.innerHTML = '<span style="color:#ef4444;">Fout: Geen actieve P2P verbinding om te proben.</span>';
+                return;
+            }
+
+            outputDiv.style.display = 'block';
+            outputDiv.innerHTML = '<span style="color:#eab308;">Probing mesh verbinding...</span>';
+
+            try {
+                const stats = await peerConnection.getStats();
+                let activePair = null;
+
+                stats.forEach(report => {
+                    if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                        activePair = report;
+                    }
+                });
+
+                if (activePair) {
+                    const localCandidate = stats.get(activePair.localCandidateId);
+                    const remoteCandidate = stats.get(activePair.remoteCandidateId);
+                    
+                    const rttMs = activePair.currentRoundTripTime ? (activePair.currentRoundTripTime * 1000).toFixed(2) : 'Onbekend';
+
+                    outputDiv.innerHTML = `
+                        <b style="color:#38bdf8;">[+] Mesh Node Geïdentificeerd</b><br>
+                        <hr style="border:0; border-top:1px solid #334155; margin:4px 0;">
+                        <b>Remote IP:</b> <span style="color:#10b981;">${remoteCandidate.address || remoteCandidate.ip}</span>:${remoteCandidate.port}<br>
+                        <b>Lokaal IP:</b> ${localCandidate.address || localCandidate.ip}<br>
+                        <b>Protocol:</b> ${remoteCandidate.protocol.toUpperCase()} / ${remoteCandidate.candidateType}<br>
+                        <b>Transport:</b> ${activePair.transportId}<br>
+                        <b>Latency (RTT):</b> <span style="color:#eab308;">${rttMs} ms</span>
+                    `;
+                } else {
+                    outputDiv.innerHTML = '<span style="color:#ef4444;">Fout: Kon geen actief communicatiepad vinden.</span>';
+                }
+            } catch (err) {
+                console.error(err);
+                outputDiv.innerHTML = `<span style="color:#ef4444;">Probe mislukt: ${err.message}</span>`;
+            }
         }
 
         /* =========================================================================
@@ -500,38 +551,30 @@
         }
 
         /* =========================================================================
-           SCILAB VERTALING: Niet-lineaire Dynamica (Logistische Map) over WebRTC
+           6. SCILAB VERTALING: Niet-lineaire Dynamica (Logistische Map)
            ========================================================================= */
         function genereerChaosPatroon() {
-            // 1. Wis oude bakens en haal de 'r' waarde op
             wisAlleBakens(true);
             const r = parseFloat(document.getElementById('chaos-r').value);
             
-            // 2. Wiskundige Simulatie (zoals in Scilab)
-            const N = 10; // Aantal iteraties (niet te hoog om P2P te sparen)
-            let x = 0.5; // Startwaarde
+            const N = 10; 
+            let x = 0.5; 
             const center = achtergrondMap.getCenter();
             
             let simLat = center.lat;
             let simLng = center.lng;
 
             for (let n = 1; n <= N; n++) {
-                // De logistische vergelijking
                 x = r * x * (1 - x);
-                
-                // Vertaal 'x' (0 tot 1) naar een geografische afwijking
-                // Spreid de punten een beetje uit zodat ze niet op elkaar liggen
-                simLat = simLat + ((x - 0.5) * 0.05); // Y-as afwijking
-                simLng = simLng + (0.01 * n); // X-as opschuiven per iteratie
+                simLat = simLat + ((x - 0.5) * 0.05); 
+                simLng = simLng + (0.01 * n); 
 
                 const naam = `Iteratie ${n} (x=${x.toFixed(3)})`;
                 
-                // Bepaal kleur op basis van de waarde
-                let kleur = "#3b82f6"; // Blauw
-                if (x > 0.7) kleur = "#ef4444"; // Rood als hoog
-                if (x < 0.3) kleur = "#22c55e"; // Groen als laag
+                let kleur = "#3b82f6"; 
+                if (x > 0.7) kleur = "#ef4444"; 
+                if (x < 0.3) kleur = "#22c55e"; 
 
-                // 3. Bouw baken en zend over WebRTC
                 bouwVormBakenData(simLat, simLng, naam, kleur, "cirkel", null, null, true);
             }
             
@@ -540,7 +583,7 @@
         }
 
         /* =========================================================================
-           6. WERELD QUATERNION ROTATIE & SPIEGELING (Syncs via WebRTC)
+           7. WERELD QUATERNION ROTATIE & SPIEGELING
            ========================================================================= */
         let wereldRotatie = 0; let w_flipX = 1, w_flipY = 1, w_schaal = 1.0;
 
@@ -558,7 +601,7 @@
         function resetWereld() { wereldRotatie = 0; w_flipX = 1; w_flipY = 1; w_schaal = 1.0; document.getElementById('wereld-schaal').value = 1.0; document.getElementById('world-scale-val').innerText = '1.00x'; updateWereldTransform(); }
 
         /* =========================================================================
-           7. LUOPAN KOMPAS & HEXAGRAM GRID
+           8. LUOPAN KOMPAS & HEXAGRAM GRID
            ========================================================================= */
         let luopanActief = false; let hexGridActief = false; let luopanLaag = null; let hexLaag = null;
 
@@ -571,7 +614,6 @@
         window.toggleHexGrid = function() { 
             hexGridActief = !hexGridActief; 
             if (hexGridActief) {
-                const bounds = getGeografischeBounds(achtergrondMap.getCenter(), 12);
                 const r = 50; const cols = 60; const rows = 60; const hB = Math.sqrt(3) * r; const hH = 2 * r;
                 const canvas = document.createElement('canvas'); canvas.width = cols * hB; canvas.height = rows * (hH * 0.75);
                 const ctx = canvas.getContext('2d');
@@ -593,7 +635,6 @@
         window.toggleLuopan = function() { 
             luopanActief = !luopanActief; 
             if(luopanActief) {
-                const bounds = getGeografischeBounds(achtergrondMap.getCenter(), 8);
                 const size = 1200; const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d'); const cX = size/2, cY = size/2;
 
@@ -616,7 +657,7 @@
         }
 
         /* =========================================================================
-           8. VRIJE VORM MARKERS (Elke Marker heeft eigen Quat & Syncs via WebRTC)
+           9. VRIJE VORM MARKERS
            ========================================================================= */
         var actieveBakens = [];
         var actieveVerbindingsLijn = null;
@@ -746,7 +787,7 @@
         }
 
         /* =========================================================================
-           9. OVERLAY QUATERNION TRANSFORMATIES & SPIEGELING 
+           10. OVERLAY QUATERNION TRANSFORMATIES
            ========================================================================= */
         const overlayImg = document.getElementById('gebruiker-overlay');
         let ov_x = 0, ov_y = 0, ov_schaal = 1.0, ov_rotatie = 0, ov_opaciteit = 0.7;
