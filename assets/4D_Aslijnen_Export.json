@@ -1,0 +1,80 @@
+[
+  {
+    "id": "marker_1787292989884_1",
+    "lat": 52.30884,
+    "lng": 5.22447,
+    "naam": "Punt Aalberg",
+    "kleur": "#3b82f6",
+    "vorm": "driehoek",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  },
+  {
+    "id": "marker_1787292989884_2",
+    "lat": 52.2805,
+    "lng": 5.2275,
+    "naam": "Punt Tafelberg",
+    "kleur": "#eab308",
+    "vorm": "cirkel",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  },
+  {
+    "id": "marker_1787293475384_3",
+    "lat": 52.37462980051549,
+    "lng": 4.898078441619874,
+    "naam": "oude kerk",
+    "kleur": "#ef4444",
+    "vorm": "driehoek",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  },
+  {
+    "id": "marker_1787293493510_4",
+    "lat": 52.37405995460898,
+    "lng": 4.898024797439575,
+    "naam": "oude kerk z",
+    "kleur": "#eab308",
+    "vorm": "driehoek",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  },
+  {
+    "id": "marker_1787293515713_5",
+    "lat": 52.37440055304629,
+    "lng": 4.898711442947389,
+    "naam": "oude kerk o",
+    "kleur": "#22c55e",
+    "vorm": "cirkel",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  },
+  {
+    "id": "marker_1787293531576_6",
+    "lat": 52.37436125336066,
+    "lng": 4.897541999816895,
+    "naam": "oude kerk w",
+    "kleur": "#3b82f6",
+    "vorm": "vierkant",
+    "quat": {
+      "rot": 0,
+      "flipX": 1,
+      "flipY": 1
+    }
+  }
+]

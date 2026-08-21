@@ -1,0 +1,125 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.22447,
+          52.30884
+        ]
+      },
+      "properties": {
+        "naam": "Punt Aalberg",
+        "kleur": "#3b82f6",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.2275,
+          52.2805
+        ]
+      },
+      "properties": {
+        "naam": "Punt Tafelberg",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898078441619874,
+          52.37462980051549
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk",
+        "kleur": "#ef4444",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898024797439575,
+          52.37405995460898
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk z",
+        "kleur": "#eab308",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898711442947389,
+          52.37440055304629
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk o",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897541999816895,
+          52.37436125336066
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk w",
+        "kleur": "#3b82f6",
+        "vorm": "vierkant",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    }
+  ]
+}
