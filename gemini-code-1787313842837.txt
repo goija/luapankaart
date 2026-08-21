@@ -1,0 +1,46 @@
+// 1. Definieer de callback functie die de berekening uitvoert
+function update_simulatie()
+    // Zoek het invoerveld op basis van de 'tag' en lees de tekst uit
+    h_input = findobj("tag", "r_waarde");
+    r = evstr(h_input.string); // evstr() converteert de tekst naar een getal
+
+    // Bereken het wiskundige model (Logistische Map)
+    N = 60; // Aantal iteraties
+    x = zeros(1, N);
+    x(1) = 0.5; // Startwaarde
+
+    for n = 1:(N-1)
+        x(n+1) = r * x(n) * (1 - x(n));
+    end
+
+    // Teken de nieuwe grafiek
+    drawlater(); // Pauzeer schermverversing voor soepele overgang
+    
+    // Maak alleen de plot-assen leeg, laat de knoppen intact
+    a = gca();
+    delete(a.children); 
+    
+    // Plot de nieuwe data
+    plot2d(1:N, x, style=2);
+    xtitle("Logistische Map (r = " + string(r) + ")", "Iteratie (n)", "x(n)");
+    
+    drawnow(); // Ververs het scherm
+endfunction
+
+// 2. Bouw de Grafische Interface (GUI)
+f = figure("figure_name", "Niet-lineaire Dynamica GUI", "position", [100, 100, 700, 500]);
+
+// Tekstlabel voor het invoerveld
+uicontrol(f, "style", "text", "string", "Groeifactor r (bijv 2.8 of 3.8):", ...
+          "position", [20, 450, 180, 20]);
+
+// Invoerveld (edit box)
+// We geven dit veld een 'tag' zodat we de inhoud later in de functie kunnen ophalen
+uicontrol(f, "style", "edit", "string", "2.8", ...
+          "position", [210, 450, 60, 20], ...
+          "tag", "r_waarde");
+
+// Actieknop die de functie 'update_simulatie' aanroept
+uicontrol(f, "style", "pushbutton", "string", "Simuleer", ...
+          "position", [290, 445, 100, 30], ...
+          "callback", "update_simulatie");
