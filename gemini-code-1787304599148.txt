@@ -1,0 +1,102 @@
+// ==============================================================================
+// SCILAB: OPTISCHE LENS FLARE SIMULATIE (Blaricum)
+// Waarneming: Zonsverduistering (12 Aug 2026, 19:49 GMT+02:00)
+// Camera: Google Pixel 9 (f/1.68, 6.9mm, 1/2666s, ISO 21)
+// Bestand: PXL_20260812_174935202.MP.jpg
+// ==============================================================================
+clear; clc; clf;
+
+// 1. Initialisatie Figuur (HDR Rendering)
+fig = gcf();
+fig.color_map = hotcolormap(256); // Uitgebreide colormap voor vloeiende lichtovergangen
+fig.background = 1;               // Pikzwarte basis
+drawlater();
+
+ax = gca();
+ax.isoview = "on";
+ax.box = "off";
+ax.axes_visible = ["off", "off", "off"]; 
+ax.data_bounds = [-100, -100; 100, 100]; 
+
+// 2. Simulatie van de Lenskoker (Vignettering / Doorkijk)
+theta = linspace(0, 2*%pi, 200);
+r_lens = 60; // De ronde opening waar je doorheen kijkt
+
+// Zwarte maskering buiten de koker
+xfpoly([-100, 100, 100, -100], [100, 100, -100, -100]); 
+e_out = gce(); e_out.background = 1;
+
+// De opening
+xfpoly(r_lens * cos(theta), r_lens * sin(theta));
+e_in = gce(); e_in.background = 32; // Donkere namiddaghemel
+
+// 3. Abstracte Horizon / Bomenlijn (Silhouet)
+// Dit modelleert de bomen die onderin de koker zichtbaar zijn
+horizon_x = [-60, -40, -20, 0, 20, 40, 60];
+horizon_y = [-30, -25, -35, -28, -32, -20, -35];
+xfpoly([horizon_x, 60, -60], [horizon_y, -60, -60]);
+e_hor = gce(); e_hor.background = 8; e_hor.line_mode = "off"; // Zeer donkergrijs/zwart
+
+// 4. Zon & Primaire Flare (1/2666s sluitertijd)
+// Zonnepositie iets rechts van het midden
+zon_x = 25; 
+zon_y = -5;
+
+// Grote, diffuse halo (groter dan voorheen door langere sluitertijd)
+xfpoly(zon_x + 35 * cos(theta), zon_y + 35 * sin(theta));
+e_halo2 = gce(); e_halo2.background = 64; e_halo2.line_mode = "off";
+
+// Binnenste halo
+xfpoly(zon_x + 18 * cos(theta), zon_y + 18 * sin(theta));
+e_halo1 = gce(); e_halo1.background = 128; e_halo1.line_mode = "off";
+
+// Felle kern (De zon zelf)
+xfpoly(zon_x + 6 * cos(theta), zon_y + 6 * sin(theta));
+e_core = gce(); e_core.background = 256; e_core.line_mode = "off"; // Maximum wit
+
+// 5. Interne Lensreflecties (Optische artefacten veroorzaakt door het f/1.68 diafragma)
+// Reflecties liggen op de optische as door het centrum (0,0) en de zon
+as_dx = 0 - zon_x;
+as_dy = 0 - zon_y;
+
+// Flare 1: Grote spookring (dichter bij het centrum)
+xfpoly((zon_x + 1.2 * as_dx) + 16 * cos(theta), (zon_y + 1.2 * as_dy) + 16 * sin(theta));
+f1 = gce(); f1.background = 45; f1.line_mode = "off";
+
+// Flare 2: Kleinere, intensere ring
+xfpoly((zon_x + 1.6 * as_dx) + 8 * cos(theta), (zon_y + 1.6 * as_dy) + 8 * sin(theta));
+f2 = gce(); f2.background = 80; f2.line_mode = "off";
+
+// Flare 3: Regenboog-artefact aan de rand
+xfpoly((zon_x + 1.9 * as_dx) + 22 * cos(theta), (zon_y + 1.9 * as_dy) + 22 * sin(theta));
+f3 = gce(); f3.background = 25; f3.line_mode = "off";
+
+
+// 6. EXIF Data & Telemetrie Overlay (HUD)
+xstring(-95, 90, "OPTISCHE LENS FLARE SIMULATIE");
+t1 = gce(); t1.font_foreground = 256; t1.font_size = 3;
+
+xstring(-95, 82, "Bestand: PXL_20260812_174935202.MP.jpg");
+t2 = gce(); t2.font_foreground = 200; t2.font_size = 2;
+
+xstring(-95, 75, "Tijdstip: 12 aug 2026, 19:49 (GMT+02:00)");
+t3 = gce(); t3.font_foreground = 200; t3.font_size = 2;
+
+xstring(-95, 68, "Locatie: Blaricum (Tafelbergheide)");
+t4 = gce(); t4.font_foreground = 200; t4.font_size = 2;
+
+// Camera Specs Box
+xstring(35, -80, "TELEMETRIE PIXEL 9");
+t5 = gce(); t5.font_foreground = 150; t5.font_size = 2;
+
+xstring(35, -88, "Apertuur: ƒ/1.68 | Focal: 6.9 mm");
+t6 = gce(); t6.font_foreground = 256; t6.font_size = 1;
+
+xstring(35, -95, "Sluiter: 1/2666s | ISO: 21 | 12.5 MP");
+t7 = gce(); t7.font_foreground = 256; t7.font_size = 1;
+
+// Optische As Indicator (stippellijn door de flares)
+xpoly([zon_x, zon_x + 2.5 * as_dx], [zon_y, zon_y + 2.5 * as_dy], "lines", 1);
+l_as = gce(); l_as.line_style = 3; l_as.foreground = 100;
+
+drawnow();
