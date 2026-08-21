@@ -1,0 +1,1625 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.22447,
+          52.30884
+        ]
+      },
+      "properties": {
+        "naam": "Punt Aalberg",
+        "kleur": "#3b82f6",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.2275,
+          52.2805
+        ]
+      },
+      "properties": {
+        "naam": "Punt Tafelberg",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898639151013029,
+          52.374822944476506
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk",
+        "kleur": "#ef4444",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897742143706916,
+          52.37410198372547
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk z",
+        "kleur": "#eab308",
+        "vorm": "driehoek",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898900091636059,
+          52.37402229212914
+        ]
+      },
+      "properties": {
+        "naam": "oude kerk o",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897884428506219,
+          52.37451775011163
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897958508562828,
+          52.37447408390912
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897920191292152,
+          52.37443509619183
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897820566388465,
+          52.374461607843315
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897726050454226,
+          52.374481881448446
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897897200929778,
+          52.37439454892933
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8977975760260914,
+          52.37438987039665
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897692842152956,
+          52.37438987039665
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897590662764567,
+          52.3743914299076
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897917636807447,
+          52.37434620406773
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897820566388465,
+          52.374319692346916
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897726050454226,
+          52.374299418667356
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897626425550499,
+          52.3742729069185
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897958508562828,
+          52.374311894778955
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898019816195839,
+          52.37428538303758
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898086232798296,
+          52.37427446643359
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898165421824314,
+          52.37428226400816
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897884428506219,
+          52.374265109342275
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897984053409905,
+          52.374226121440515
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898093896252448,
+          52.374213645304664
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898201184610246,
+          52.374226121440515
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.89781034844965,
+          52.37422456192372
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8979355182004145,
+          52.37416685976391
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898086232798296,
+          52.37415438361132
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898244610850329,
+          52.374169978801476
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898280373636262,
+          52.374110717049554
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898088787282999,
+          52.37409356231706
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897897200929778,
+          52.374109157528686
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897733713908337,
+          52.37417933591294
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898443860657703,
+          52.374169978801476
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#eab308",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898374889570541,
+          52.37421832385602
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.89830591848338,
+          52.37426043079588
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898221620487955,
+          52.374311894778955
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898265046728,
+          52.37434932309262
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898354453692871,
+          52.37432125186035
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8984566330812624,
+          52.37429785915318
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898548594530797,
+          52.37428226400816
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898589466286176,
+          52.37438987039665
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898477068958932,
+          52.37439610844012
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8983723350858375,
+          52.37438987039665
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898277819151558,
+          52.37439298941849
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898262492243295,
+          52.374439774719704
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898364671631686,
+          52.37446316735174
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898461742050669,
+          52.3744850004638
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898556257984948,
+          52.37450995257861
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8984464151424065,
+          52.37460820139374
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8983723350858375,
+          52.37456297577585
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#22c55e",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8982982550292276,
+          52.37451619060514
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898221620487955,
+          52.37447252440108
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898167976309017,
+          52.37449747652296
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898203739094949,
+          52.37455673775597
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898244610850329,
+          52.37461287990332
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898282928120966,
+          52.374672140981446
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898242056365626,
+          52.37461287990332
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898285482605669,
+          52.374522428630755
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898224174972659,
+          52.37447408390912
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898196075640837,
+          52.374559856766
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898162867339608,
+          52.374499036030116
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898086232798296,
+          52.37450683356504
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898093896252448,
+          52.37457233280404
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898088787282999,
+          52.37463315343899
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898086232798296,
+          52.37463315343899
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898091341767743,
+          52.37470021199069
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898088787282999,
+          52.37457233280404
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.898014707226431,
+          52.37449747652296
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897981498925202,
+          52.37455517825082
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8979457361392695,
+          52.374615998909384
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897899755414481,
+          52.374670581480395
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#ef4444",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897950845108677,
+          52.37447252440108
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897879319536812,
+          52.37451775011163
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.89781034844965,
+          52.37456453528067
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897736268393041,
+          52.374609760897
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897917636807447,
+          52.37443197717295
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897820566388465,
+          52.37446316735174
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.89772860493893,
+          52.37448811947892
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.897634089004651,
+          52.37450683356504
+        ]
+      },
+      "properties": {
+        "naam": "oudekerk baken west",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    }
+  ]
+}
