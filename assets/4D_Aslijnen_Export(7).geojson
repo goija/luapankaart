@@ -1,0 +1,205 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.235984999999983,
+          52.304672266663914
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 1 (x=0.700)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.255984999999982,
+          52.30907226666391
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 2 (x=0.588)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.285984999999982,
+          52.31798810666391
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 3 (x=0.678)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.325984999999982,
+          52.323536543301195
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 4 (x=0.611)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.375984999999982,
+          52.33181257495059
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 5 (x=0.666)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.435984999999982,
+          52.33797698375833
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 6 (x=0.623)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.505984999999982,
+          52.34584898734519
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 7 (x=0.657)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.585984999999982,
+          52.35237875467879
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 8 (x=0.631)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.675984999999982,
+          52.35999103443866
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 9 (x=0.652)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.775984999999982,
+          52.366746013462674
+        ]
+      },
+      "properties": {
+        "naam": "Iteratie 10 (x=0.635)",
+        "kleur": "#3b82f6",
+        "vorm": "cirkel",
+        "quat": {
+          "rot": 0,
+          "flipX": 1,
+          "flipY": 1
+        }
+      }
+    }
+  ]
+}
