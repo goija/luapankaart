@@ -1,0 +1,100 @@
+// ==============================================================================
+// SCILAB: FYSISCHE SCHADUW PROJECTIE MODEL (Top-Down View)
+// Locatie: Tafelberg Blaricum ("...gste punt van het Gooi")
+// Tijdstip: 12 Aug 2026, 19:58 (GMT+02:00) | PXL_20260812_175809999.MP.jpg
+// Setup: Zandloper op spiegelkubus, kompas, en polair grid
+// ==============================================================================
+clear; clc; clf;
+
+// 1. Initialisatie Figuur (Fysieke belichting)
+fig = gcf();
+fig.background = 8; // Witte/Lichte basis
+drawlater();
+
+ax = gca();
+ax.isoview = "on";
+ax.box = "on";
+ax.axes_visible = ["off", "off", "off"]; 
+ax.data_bounds = [-100, -100; 100, 100]; 
+ax.title.text = "Fysieke Schaduw Projectie (Tafelberg, 19:58)";
+ax.title.font_size = 3;
+
+// 2. De Stenen Oriëntatietafel (Achtergrond)
+xfpoly([-100, 100, 100, -100], [100, 100, -100, -100]);
+bg = gce(); bg.background = 16; // Donkergrijs hardsteen
+
+// Gegraveerde tekst op de steen
+t_arc = linspace(%pi*0.7, %pi*0.3, 30);
+r_text = 75;
+for i=1:length(t_arc)
+    // Abstracte weergave van de gebogen gravure "...gste punt van het..."
+    xpoly(r_text*cos(t_arc(i)), r_text*sin(t_arc(i)), "marks", 1);
+    pm = gce(); pm.mark_style = 0; pm.mark_size = 1; pm.mark_foreground = 12;
+end
+xstring(-65, 70, "gste punt van he...");
+t_steen = gce(); t_steen.font_foreground = 13; t_steen.font_size = 3; t_steen.font_angle = -15;
+
+// 3. De Papieren Matrix (Polair Grid)
+cx = 0; cy = 0; // Centrum van de opstelling (Zandloper)
+theta = linspace(0, 2*%pi, 100);
+
+// Teken wit papier
+xfpoly([-40, 50, 45, -45], [40, 35, -45, -40]);
+papier = gce(); papier.background = 8; papier.line_mode = "off";
+
+// Concentrische ringen op het papier
+for r = 10:10:35
+    xpoly(cx + r*cos(theta), cy + r*sin(theta));
+    ring = gce(); ring.foreground = 14; ring.line_style = 3;
+end
+
+// 4. Het Kompas (Linksonder op het papier)
+cx_komp = -20; cy_komp = -25; r_komp = 12;
+xfpoly(cx_komp + r_komp*cos(theta), cy_komp + r_komp*sin(theta));
+komp_bg = gce(); komp_bg.background = 1; // Zwarte rand
+xfpoly(cx_komp + (r_komp-2)*cos(theta), cy_komp + (r_komp-2)*sin(theta));
+komp_in = gce(); komp_in.background = 8; // Witte wijzerplaat
+
+// Magnetische naald (Wijst naar het Noorden / Boven)
+xpoly([cx_komp, cx_komp+2], [cy_komp, cy_komp+8], "lines", 1); 
+n1 = gce(); n1.foreground = 5; n1.thickness = 2; // Rood (Noord)
+xpoly([cx_komp, cx_komp-2], [cy_komp, cy_komp-8], "lines", 1); 
+n2 = gce(); n2.foreground = 1; n2.thickness = 2; // Zwart (Zuid)
+
+// 5. De Zandloper & Spiegelkubus (Centrum)
+// Kubus
+xfpoly([-8, 8, 8, -8], [8, 8, -8, -8]);
+kubus = gce(); kubus.background = 12; kubus.foreground = 1;
+
+// Zandloper (Bovenaanzicht, cirkel)
+xfpoly(cx + 6*cos(theta), cy + 6*sin(theta));
+zand = gce(); zand.background = 2; // Blauw-achtig glas
+
+// 6. SCHADUW PROJECTIE (Azimut 295° resulteert in schaduw naar 115°)
+// Zon staat op 295 graden (WNW), schaduw valt exact de andere kant op (115 graden, OZO)
+az_zon = 295;
+az_schaduw = az_zon - 180; // 115 graden
+rad_schaduw = (90 - az_schaduw) * %pi / 180; // Wiskundige hoek
+
+schaduw_lengte = 85; // De schaduw is lang door de relatief lage zon
+sx = cx + schaduw_lengte * cos(rad_schaduw);
+sy = cy + schaduw_lengte * sin(rad_schaduw);
+
+// Teken het schaduwvlak (uitwaaierend vanaf de kubusbasis)
+xfpoly([cx-5, cx+5, sx+12, sx-12], [cy-5, cy+5, sy, sy]);
+schaduw_vlak = gce(); 
+schaduw_vlak.background = 1; // Zwart/Donker
+schaduw_vlak.line_mode = "off";
+
+// Zandloper vorm in de schaduw (De inkeping in de schaduw op de knie)
+xpoly(cx + 60*cos(rad_schaduw), cy + 60*sin(rad_schaduw), "marks", 1);
+sh_mark = gce(); sh_mark.mark_style = 9; sh_mark.mark_size = 15; sh_mark.mark_foreground = 16;
+
+// 7. EXIF HUD (Rechtsonder)
+xstring(35, -70, "EXIF DATA: 19:58"); t1 = gce(); t1.font_foreground = 8; t1.font_size = 2;
+xstring(35, -77, "Google Pixel 9"); t2 = gce(); t2.font_foreground = 8; t2.font_size = 1;
+xstring(35, -83, "f/1.68 | 1/197s | ISO 21"); t3 = gce(); t3.font_foreground = 8; t3.font_size = 1;
+xstring(35, -89, "Zon Azimut: ~295°"); t4 = gce(); t4.font_foreground = 7; t4.font_size = 1;
+xstring(35, -95, "Schaduw Vector: ~115°"); t5 = gce(); t5.font_foreground = 5; t5.font_size = 1;
+
+drawnow();
