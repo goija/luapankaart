@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>4D Psychogeografie: Dubbele Overlay & Gelaagde Gereedschappen</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #05050a; color: #ffffff; overflow: hidden; }
+        
+        #achtergrond-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; transform-origin: center center; will-change: transform; transition: transform 0.3s ease-out;}
+        #kaart { width: 100%; height: 100%; background: #05050a; }
+
+        /* Basis Overlay Wrapper (Laag 1) */
+        #overlay-wrapper {
+            display: none; position: absolute; top: 50%; left: 50%; transform-origin: center center;
+            pointer-events: none; will-change: transform; transition: transform 0.1s linear;
+            z-index: 1000;
+        }
+        #gebruiker-overlay { display: block; max-width: 600px; height: auto; opacity: 0.7; }
+
+        /* Tweede Overlay Wrapper (Gereedschap / Laag 2 bovenop Laag 1) */
+        #overlay-wrapper-2 {
+            display: none; position: absolute; top: 50%; left: 50%; transform-origin: center center;
+            pointer-events: none; will-change: transform; transition: transform 0.1s linear;
+            z-index: 2000; /* Ligt boven op de eerste overlay */
+        }
+        #gebruiker-overlay-2 { display: block; max-width: 500px; height: auto; opacity: 0.8; }
+
+        .visual-box-on { border: 3px dashed #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.05); }
+        .visual-box-2-on { border: 3px dashed #e94560; box-shadow: 0 0 25px rgba(233, 69, 96, 0.4); background: rgba(233, 69, 96, 0.05); }
+
+        /* UI Bediening */
+        #mobiel-menu-knop { position: absolute; top: 10px; right: 10px; z-index: 100000; background: #e94560; color: white; border: none; padding: 10px 15px; font-size: 13px; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer; display: none; }
+        #bedienings-paneel { position: absolute; top: 20px; left: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 6px; background: rgba(10, 15, 29, 0.95); padding: 14px; border-radius: 8px; border: 1px solid #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; width: 340px; box-sizing: border-box; }
+        #paneel-header { background: #e94560; color: #fff; padding: 7px; text-align: center; font-family: monospace; font-weight: bold; font-size: 12px; border-radius: 4px; margin-bottom: 4px; user-select: none; }
+        
+        .paneel-titel { color: #38bdf8; font-size: 11px; font-weight: bold; font-family: monospace; text-transform: uppercase; margin-bottom: 2px; border-bottom: 1px solid #1e293b; padding-bottom: 3px; margin-top: 8px; }
+        input[type="text"], select.vorm-keuze { background-color: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 6px; font-family: monospace; font-size: 11px; border-radius: 4px; outline: none; width: 100%; box-sizing: border-box; }
+        
+        .rotatie-knop { background-color: #e94560; color: white; border: none; padding: 6px 2px; font-family: monospace; font-weight: bold; font-size: 11px; border-radius: 4px; cursor: pointer; transition: background-color 0.15s; flex: 1; text-align: center; }
+        .rotatie-knop:hover { background-color: #ff6b81; }
+        .rotatie-knop.secundair { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;}
+        .rotatie-knop.secundair:hover { background-color: #334155; color: #fff; }
+        .actie-row { display: flex; gap: 4px; flex-wrap: wrap; }
+        .slider-label { font-size: 10px; color: #94a3b8; font-family: monospace; display: flex; justify-content: space-between; margin-top: 4px; }
+        input[type=range] { width: 100%; margin: 2px 0; cursor: pointer; }
+
+        /* Baken CSS Vormen */
+        .baken-container { position: relative; width: 40px; height: 40px; transform-origin: center center; transition: transform 0.15s linear; }
+        .baken-vorm-laag { position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; z-index: 2; display: flex; align-items: center; justify-content: center; }
+        .vorm-cirkel { border-radius: 50%; border: 2px solid #fff; box-sizing: border-box; }
+        .vorm-vierkant { border-radius: 0; border: 2px solid #fff; box-sizing: border-box; }
+        .vorm-driehoek { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        .baken-puls { position: absolute; top: 5px; left: 5px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid; animation: baken-golf 2s infinite ease-out; opacity: 0; z-index: 1; }
+        .baken-label { position: absolute; top: 38px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid; font-family: monospace; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 3;}
+
+        @keyframes baken-golf { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+
+        .leaflet-popup-content-wrapper { background-color: #0f172a; color: #fff; border: 1px solid #38bdf8; }
+        .leaflet-popup-tip { background-color: #0f172a; }
+        .leaflet-draw-toolbar a { background-color: #1e293b !important; border-color: #334155 !important; color: #fff !important; }
+        
+        @media (max-width: 768px) {
+            #mobiel-menu-knop { display: block; }
+            #bedienings-paneel { width: calc(100% - 40px); left: 20px; top: 60px; display: none; }
+            #bedienings-paneel.actief { display: flex; }
+        }
+    </style>
+</head>
+<body>
+    <button id="mobiel-menu-knop" onclick="toggleMobielMenu()">☰ MENU</button>
+    
+    <div id="achtergrond-wrapper">
+        <div id="kaart"></div>
+    </div>
+    
+    <!-- Overlay Laag 1 -->
+    <div id="overlay-wrapper" class="visual-box-on">
+        <img id="gebruiker-overlay" alt="Overlay 1" src="" />
+    </div>
+
+    <!-- Overlay Laag 2 (Gereedschap / Bovenste Upload Box) -->
+    <div id="overlay-wrapper-2" class="visual-box-2-on">
+        <img id="gebruiker-overlay-2" alt="Gereedschap Overlay" src="" />
+    </div>
+
+    <div id="bedienings-paneel">
+        <div id="paneel-header">✥ Gelaagde Engine & Tools</div>
+
+        <!-- Wereld Rotatie -->
+        <div class="paneel-titel" style="margin-top:0;">1. Wereld Draaien</div>
+        <div class="actie-row">
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(1)">+ 1°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(5)">+ 5°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(15)">+ 15°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(30)">+ 30°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(33)">+ 33°</button>
+        </div>
+        <div class="actie-row" style="margin-top:4px;">
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(42)">+ 42°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(66)">+ 66°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(180)">+ 180°</button>
+            <button class="rotatie-knop secundair" onclick="voegWereldRotatieToe(181)">+ 181°</button>
+            <button class="rotatie-knop" style="background-color:#b91c1c;" onclick="resetWereld()">Reset</button>
+        </div>
+
+        <!-- Data & Tekenen -->
+        <div class="paneel-titel">2. Data & Tekenen</div>
+        <div class="actie-row">
+            <input type="file" id="data-upload" accept=".json,.geojson,.csv" onchange="uploadBestand(event)" style="display:none;">
+            <button class="rotatie-knop" style="background-color:#22c55e;" onclick="document.getElementById('data-upload').click()">📂 Upload Data</button>
+            <button class="rotatie-knop" style="background-color:#3b82f6;" onclick="downloadData('geojson')">💾 GeoJSON</button>
+        </div>
+        <div class="actie-row" style="margin-top:4px;">
+            <button class="rotatie-knop" style="background-color:#b91c1c;" onclick="wisAlles()">🗑️ Wis Alles</button>
+        </div>
+
+        <!-- Markers -->
+        <div class="paneel-titel">3. Plaats Bakens</div>
+        <input type="text" id="custom-baken-naam" placeholder="Baken Naam..." style="margin-bottom:4px;">
+        <div class="actie-row" style="margin-bottom:4px;">
+            <select id="custom-baken-vorm" class="vorm-keuze">
+                <option value="cirkel">Vorm: Cirkel</option>
+                <option value="driehoek">Vorm: Driehoek</option>
+                <option value="vierkant">Vorm: Vierkant</option>
+            </select>
+            <select id="custom-baken-kleur" class="vorm-keuze">
+                <option value="#ef4444">Rood</option>
+                <option value="#22c55e">Groen</option>
+                <option value="#3b82f6">Blauw</option>
+                <option value="#eab308">Geel</option>
+            </select>
+        </div>
+        <div class="actie-row">
+            <button class="rotatie-knop" style="background-color:#0284c7;" onclick="plaatsCustomMarker()">✚ Plaats in Centrum</button>
+        </div>
+
+        <!-- Bitmap Overlay 1 -->
+        <div class="paneel-titel">4. Basis Bitmap Overlay (Laag 1)</div>
+        <input type="file" id="overlay-upload" accept="image/*" onchange="uploadOverlay(event)" style="display:none;">
+        <div class="actie-row">
+            <button class="rotatie-knop" onclick="document.getElementById('overlay-upload').click()">🖼️ Upload Laag 1</button>
+            <button class="rotatie-knop" style="background-color:#8b5cf6;" onclick="toggleVisualBox(1)">🔲 Box 1</button>
+            <button class="rotatie-knop" style="background-color:#b91c1c;" onclick="wisOverlay(1)">Wis</button>
+        </div>
+        <div class="slider-label"><span>Transparantie:</span></div>
+        <input type="range" id="overlay-opaciteit" min="0" max="1" step="0.05" value="0.7" oninput="updateOverlayStyle(1)">
+        <div class="slider-label"><span>Schaal:</span><span id="scale-val-1">1.00x</span></div>
+        <input type="range" id="overlay-schaal" min="0.1" max="5.0" step="0.05" value="1.0" oninput="updateOverlayStyle(1)">
+
+        <!-- Bitmap Overlay 2 (Gereedschap / Bovenste Laag) -->
+        <div class="paneel-titel" style="color:#e94560;">5. Gereedschap Overlay (Laag 2 Bovenop)</div>
+        <input type="file" id="overlay-upload-2" accept="image/*" onchange="uploadOverlay2(event)" style="display:none;">
+        <div class="actie-row">
+            <button class="rotatie-knop" style="background-color:#e94560;" onclick="document.getElementById('overlay-upload-2').click()">🖼️ Upload Gereedschap</button>
+            <button class="rotatie-knop" style="background-color:#8b5cf6;" onclick="toggleVisualBox(2)">🔲 Box 2</button>
+            <button class="rotatie-knop" style="background-color:#b91c1c;" onclick="wisOverlay(2)">Wis</button>
+        </div>
+        <div class="slider-label"><span>Transparantie Tool:</span></div>
+        <input type="range" id="overlay-opaciteit-2" min="0" max="1" step="0.05" value="0.8" oninput="updateOverlayStyle(2)">
+        <div class="slider-label"><span>Schaal Tool:</span><span id="scale-val-2">1.00x</span></div>
+        <input type="range" id="overlay-schaal-2" min="0.1" max="5.0" step="0.05" value="1.0" oninput="updateOverlayStyle(2)">
+        <div class="slider-label"><span>Rotatie Tool:</span><span id="rot-val-2">0°</span></div>
+        <div class="actie-row">
+            <button class="rotatie-knop secundair" onclick="roterenOverlay2(-15)">↺ -15°</button>
+            <button class="rotatie-knop secundair" onclick="roterenOverlay2(15)">↻ +15°</button>
+            <button class="rotatie-knop secundair" onclick="roterenOverlay2(90)">↻ 90°</button>
+        </div>
+        <div class="slider-label"><span>Verplaatsing Tool (Pan X/Y):</span></div>
+        <div class="actie-row">
+            <button class="rotatie-knop secundair" onclick="verschuifOverlay2(0, -25)">▲</button>
+            <button class="rotatie-knop secundair" onclick="verschuifOverlay2(0, 25)">▼</button>
+            <button class="rotatie-knop secundair" onclick="verschuifOverlay2(-25, 0)">◀</button>
+            <button class="rotatie-knop secundair" onclick="verschuifOverlay2(25, 0)">▶</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS & Draw -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <script>
+        function toggleMobielMenu() { document.getElementById('bedienings-paneel').classList.toggle('actief'); }
+
+        /* =========================================================================
+           1. QUATERNION & HEX-CELL WISKUNDE ENGINE
+           ========================================================================= */
+        class Quaternion {
+            constructor(w = 1, x = 0, y = 0, z = 0) { this.w = w; this.x = x; this.y = y; this.z = z; }
+            static fromAxisAngle(graden) {
+                const rad = (graden * Math.PI) / 180;
+                return new Quaternion(Math.cos(rad / 2), 0, 0, Math.sin(rad / 2));
+            }
+            toCSSMatrix() {
+                const { w, x, y, z } = this;
+                return `matrix3d(${1 - 2 * (y * y + z * z)}, ${2 * (x * y + w * z)}, 0, 0, ${2 * (x * y - w * z)}, ${1 - 2 * (x * x + z * z)}, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)`;
+            }
+        }
+
+        const radius = 60; 
+        const kolommen = 30;
+        const rijen = 30;
+        const hB = Math.sqrt(3) * radius;
+        const hH = 2 * radius;
+
+        function berekenCelCoordinaten(y, x) {
+            let besteKol = 0, besteRij = 0;
+            let kleinsteAfstand = Infinity;
+
+            for (let rij = 0; rij < rijen; rij++) {
+                for (let kol = 0; kol < kolommen; kol++) {
+                    let cx = kol * hB + (rij % 2 === 1 ? hB / 2 : 0) + hB / 2;
+                    let cy = rij * (hH * 0.75) + hH / 2;
+                    let afstand = Math.hypot(x - cx, y - cy);
+                    if (afstand < kleinsteAfstand) {
+                        kleinsteAfstand = afstand;
+                        besteKol = kol;
+                        besteRij = rij;
+                    }
+                }
+            }
+            let middenX = besteKol * hB + (besteRij % 2 === 1 ? hB / 2 : 0) + hB / 2;
+            let middenY = besteRij * (hH * 0.75) + hH / 2;
+            return { kolom: besteKol, rij: besteRij, y: middenY, x: middenX };
+        }
+
+        /* =========================================================================
+           2. KAART SETUP & HEXGRID CANVAS
+           ========================================================================= */
+        function genereerHexRaster(cols, rows, r) {
+            const canvas = document.createElement('canvas');
+            canvas.width = cols * hB + (hB / 2);
+            canvas.height = rows * (hH * 0.75) + (hH / 4);
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#05050a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; 
+            ctx.lineWidth = 2;
+            for (let rij = 0; rij < rows; rij++) {
+                for (let kol = 0; kol < cols; kol++) {
+                    let x = kol * hB + (rij % 2 === 1 ? hB / 2 : 0) + hB / 2;
+                    let y = rij * (hH * 0.75) + hH / 2;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        let hoek = (Math.PI / 180) * (60 * i - 30);
+                        ctx.lineTo(x + r * Math.cos(hoek), y + r * Math.sin(hoek));
+                    }
+                    ctx.closePath(); 
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '11px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillText(`${kol},${rij}`, x, y);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+            return { imgData: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
+        }
+
+        const raster = genereerHexRaster(kolommen, rijen, radius);
+
+        var map = L.map('kaart', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 2, zoomControl: false });
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        var bounds = [[0, 0], [raster.h, raster.w]]; 
+        L.imageOverlay(raster.imgData, bounds).addTo(map);
+        map.fitBounds(bounds);
+
+        /* =========================================================================
+           3. LEAFLET DRAW & NETWERK
+           ========================================================================= */
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        var verbindingsLijnLaag = L.layerGroup().addTo(map);
+
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#38bdf8' } },
+                polyline: { shapeOptions: { color: '#e94560' } },
+                rectangle: { shapeOptions: { color: '#22c55e' } },
+                circle: false, circlemarker: false, marker: false
+            },
+            edit: { featureGroup: drawnItems }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, function (e) { drawnItems.addLayer(e.layer); });
+
+        function updateLijnenNetwerk() {
+            verbindingsLijnLaag.clearLayers();
+            if (actieveBakens.length < 2) return;
+            const punten = actieveBakens.map(b => [b.getLatLng().lat, b.getLatLng().lng]);
+            L.polyline(punten, { color: '#e94560', weight: 2, dashArray: '6, 6', opacity: 0.9 }).addTo(verbindingsLijnLaag);
+        }
+
+        function wisAlles() {
+            drawnItems.clearLayers();
+            verbindingsLijnLaag.clearLayers();
+            actieveBakens.forEach(m => map.removeLayer(m));
+            actieveBakens = [];
+            bakenTeller = 1;
+        }
+
+        /* =========================================================================
+           4. DATA UITWISSELING
+           ========================================================================= */
+        function downloadData(formaat) {
+            let dataOutput = "";
+            let filename = "hex_project.";
+
+            if (formaat === 'geojson') {
+                filename += "geojson";
+                let fc = { type: "FeatureCollection", features: [] };
+                actieveBakens.forEach(b => {
+                    fc.features.push({
+                        type: "Feature",
+                        geometry: { type: "Point", coordinates: [b.getLatLng().lng, b.getLatLng().lat] },
+                        properties: { name: b._customNaam, color: b._customKleur, shape: b._customVorm }
+                    });
+                });
+                drawnItems.eachLayer(layer => { fc.features.push(layer.toGeoJSON()); });
+                dataOutput = JSON.stringify(fc, null, 2);
+            }
+
+            const blob = new Blob([dataOutput], {type: "text/plain;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+        }
+
+        function uploadBestand(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const json = JSON.parse(evt.target.result);
+                    if (json.type === "FeatureCollection") {
+                        L.geoJSON(json, {
+                            onEachFeature: function(feature, layer) {
+                                if (feature.geometry.type === "Point") {
+                                    let c = feature.geometry.coordinates;
+                                    let p = feature.properties || {};
+                                    bouwVormBaken(c[1], c[0], p.name || 'Baken', p.color || '#38bdf8', p.shape || 'cirkel', true);
+                                } else {
+                                    drawnItems.addLayer(layer);
+                                }
+                            }
+                        });
+                    }
+                } catch(err) { alert("Fout bij inlezen."); }
+                updateLijnenNetwerk();
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        /* =========================================================================
+           5. WERELD ROTATIE
+           ========================================================================= */
+        let wereldRotatie = 0;
+        function updateWereldTransform() {
+            const q = Quaternion.fromAxisAngle(wereldRotatie);
+            document.getElementById('achtergrond-wrapper').style.transform = q.toCSSMatrix();
+        }
+        function voegWereldRotatieToe(graden) {
+            wereldRotatie = (wereldRotatie + graden) % 360;
+            updateWereldTransform();
+        }
+        function resetWereld() { wereldRotatie = 0; updateWereldTransform(); }
+
+        /* =========================================================================
+           6. BAKENS & CEL-SNAPPING
+           ========================================================================= */
+        var actieveBakens = [];
+        var bakenTeller = 1;
+
+        window.updateMarkerTransform = function(id) {
+            const marker = actieveBakens.find(b => b._customId === id);
+            if (marker && document.getElementById(`container_${id}`)) {
+                const q = Quaternion.fromAxisAngle(marker._quatState.rot);
+                document.getElementById(`container_${id}`).style.transform = `${q.toCSSMatrix()} scale(${marker._quatState.flipX}, ${marker._quatState.flipY})`;
+            }
+        };
+
+        window.roterenMarker = function(id, graden) {
+            const marker = actieveBakens.find(b => b._customId === id);
+            if(marker) { marker._quatState.rot = (marker._quatState.rot + graden) % 360; window.updateMarkerTransform(id); }
+        };
+
+        window.wisMarker = function(id) {
+            const idx = actieveBakens.findIndex(b => b._customId === id);
+            if (idx !== -1) { 
+                map.removeLayer(actieveBakens[idx]); 
+                actieveBakens.splice(idx, 1); 
+                updateLijnenNetwerk();
+            }
+        };
+
+        function bouwVormBaken(y, x, naam, kleur, vormClass, snapNaarCelMidden = true) {
+            let celInfo = berekenCelCoordinaten(y, x);
+            let targetY = snapNaarCelMidden ? celInfo.y : y;
+            let targetX = snapNaarCelMidden ? celInfo.x : x;
+
+            const uniqueId = 'marker_' + bakenTeller++;
+            const customBakenIcon = L.divIcon({
+                className: '', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20],
+                html: `
+                    <div id="container_${uniqueId}" class="baken-container">
+                        <div class="baken-puls" style="border-color:${kleur};"></div>
+                        <div class="baken-vorm-laag vorm-${vormClass}" style="background:${kleur}; box-shadow:0 0 10px ${kleur};"></div>
+                        <div class="baken-label" style="border-color:${kleur};">${naam} [${celInfo.kolom},${celInfo.rij}]</div>
+                    </div>`
+            });
+
+            const marker = L.marker([targetY, targetX], { icon: customBakenIcon, draggable: true });
+            marker._customId = uniqueId;
+            marker._customNaam = naam;
+            marker._customKleur = kleur;
+            marker._customVorm = vormClass;
+            marker._quatState = { rot: 0, flipX: 1, flipY: 1 };
+            
+            const popupInhoud = `
+                <div style="text-align:center; font-family:monospace; color:#fff;">
+                    <b style="font-size:14px; color:${kleur};">${naam}</b><br><br>
+                    Cel: <b style="color:#38bdf8;" id="cel_${uniqueId}">[${celInfo.kolom}, ${celInfo.rij}]</b><br><br>
+                    <button onclick="roterenMarker('${uniqueId}', 15)" style="background:#1e293b; color:#fff; border:1px solid #334155; padding:3px 6px; cursor:pointer;">↻ Draai +15°</button><br><br>
+                    <button onclick="wisMarker('${uniqueId}')" style="background-color:#b91c1c; color:white; border:none; padding:5px 10px; cursor:pointer; width:100%;">🗑️ Verwijder</button>
+                </div>
+            `;
+            
+            marker.bindPopup(popupInhoud);
+            marker.addTo(map);
+            actieveBakens.push(marker);
+
+            marker.on('popupopen', () => { window.updateMarkerTransform(uniqueId); });
+            marker.on('drag', updateLijnenNetwerk);
+            marker.on('dragend', (e) => {
+                const pos = e.target.getLatLng();
+                let nieuweCel = berekenCelCoordinaten(pos.lat, pos.lng);
+                document.getElementById(`cel_${uniqueId}`).innerText = `[${nieuweCel.kolom}, ${nieuweCel.rij}]`;
+                updateLijnenNetwerk();
+            });
+
+            updateLijnenNetwerk();
+        }
+
+        function plaatsCustomMarker() {
+            const naam = document.getElementById('custom-baken-naam').value || `Marker ${bakenTeller}`;
+            const vorm = document.getElementById('custom-baken-vorm').value;
+            const kleur = document.getElementById('custom-baken-kleur').value;
+            const center = map.getCenter();
+            bouwVormBaken(center.lat, center.lng, naam, kleur, vorm, true);
+        }
+
+        /* =========================================================================
+           7. OVERLAY 1 & OVERLAY 2 (GEREEDSCHAP BOVENOP FOTO)
+           ======================================================================== */
+        const overlayWrapper = document.getElementById('overlay-wrapper');
+        const overlayImg = document.getElementById('gebruiker-overlay');
+        let ov_schaal = 1.0, ov_opaciteit = 0.7;
+
+        function uploadOverlay(e) {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { overlayImg.src = evt.target.result; overlayWrapper.style.display = 'block'; };
+                reader.readAsDataURL(e.target.files[0]);
+            } e.target.value = '';
+        }
+        function toggleVisualBox(laag) {
+            if(laag === 1) {
+                overlayWrapper.classList.toggle('visual-box-on');
+            } else {
+                overlayWrapper2.classList.toggle('visual-box-2-on');
+            }
+        }
+        function updateOverlayStyle(laag) {
+            if(laag === 1) {
+                ov_schaal = parseFloat(document.getElementById('overlay-schaal').value);
+                ov_opaciteit = parseFloat(document.getElementById('overlay-opaciteit').value);
+                document.getElementById('scale-val-1').innerText = ov_schaal.toFixed(2) + 'x';
+                overlayWrapper.style.transform = `translate(-50%, -50%) scale(${ov_schaal})`;
+                overlayImg.style.opacity = ov_opaciteit;
+            } else {
+                ov2_schaal = parseFloat(document.getElementById('overlay-schaal-2').value);
+                ov2_opaciteit = parseFloat(document.getElementById('overlay-opaciteit-2').value);
+                document.getElementById('scale-val-2').innerText = ov2_schaal.toFixed(2) + 'x';
+                document.getElementById('rot-val-2').innerText = ov2_rotatie + '°';
+                
+                const q = Quaternion.fromAxisAngle(ov2_rotatie);
+                overlayWrapper2.style.transform = `translate(-50%, -50%) translate(${ov2_x}px, ${ov2_y}px) ${q.toCSSMatrix()} scale(${ov2_schaal})`;
+                overlayImg2.style.opacity = ov2_opaciteit;
+            }
+        }
+        function wisOverlay(laag) {
+            if(laag === 1) { overlayWrapper.style.display = 'none'; overlayImg.src = ''; }
+            else { overlayWrapper2.style.display = 'none'; overlayImg2.src = ''; }
+        }
+
+        /* Gereedschap / Laag 2 Specifieke Controls */
+        const overlayWrapper2 = document.getElementById('overlay-wrapper-2');
+        const overlayImg2 = document.getElementById('gebruiker-overlay-2');
+        let ov2_x = 0, ov2_y = 0, ov2_schaal = 1.0, ov2_rotatie = 0, ov2_opaciteit = 0.8;
+
+        function uploadOverlay2(e) {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { overlayImg2.src = evt.target.result; overlayWrapper2.style.display = 'block'; updateOverlayStyle(2); };
+                reader.readAsDataURL(e.target.files[0]);
+            } e.target.value = '';
+        }
+        function roterenOverlay2(graden) { ov2_rotatie = (ov2_rotatie + graden) % 360; updateOverlayStyle(2); }
+        function verschuifOverlay2(dx, dy) { ov2_x += dx; ov2_y += dy; updateOverlayStyle(2); }
+
+        /* Drag patch voor Leaflet i.c.m. Rotatie */
+        L.Draggable.prototype._onMove = function (e) {
+            if (e._simulated || !this._enabled) { return; }
+            if (e.touches && e.touches.length > 1) { this._moved = true; return; }
+            var first = (e.touches && e.touches.length === 1 ? e.touches[0] : e);
+            var rawOffset = new L.Point(first.clientX, first.clientY).subtract(this._startPoint);
+            if (!rawOffset.x && !rawOffset.y) { return; }
+            if (Math.abs(rawOffset.x) + Math.abs(rawOffset.y) < this.options.clickTolerance) { return; }
+            
+            var rad = -(wereldRotatie || 0) * (Math.PI / 180);
+            var w = Math.cos(rad / 2); var z = Math.sin(rad / 2);
+            var qNx = (w*w - z*z)*rawOffset.x - (2*w*z)*rawOffset.y;
+            var qNy = (2*w*z)*rawOffset.x + (w*w - z*z)*rawOffset.y;
+            var offset = new L.Point(qNx, qNy);
+            L.DomEvent.preventDefault(e);
+            
+            if (!this._moved) {
+                this.fire('dragstart'); this._moved = true;
+                this._startPos = L.DomUtil.getPosition(this._element).subtract(offset);
+                L.DomUtil.addClass(document.body, 'leaflet-dragging');
+                this._lastTarget = e.target || e.srcElement;
+                if (window.SVGElementInstance && this._lastTarget instanceof SVGElementInstance) { this._lastTarget = this._lastTarget.correspondingUseElement; }
+                L.DomUtil.addClass(this._lastTarget, 'leaflet-drag-target');
+            }
+            this._newPos = this._startPos.add(offset);
+            this._moving = true;
+            L.Util.cancelAnimFrame(this._animRequest);
+            this._lastEvent = e;
+            this._animRequest = L.Util.requestAnimFrame(this._updatePosition, this, true);
+        };
+    </script>
+</body>
+</html>
