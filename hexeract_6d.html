@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6D Hexeract Hyperkubus (64 Knopen / 192 Ribben)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #07070b;
+            color: #d1d5db;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(13, 15, 24, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid #1f293d;
+            border-radius: 8px;
+            padding: 16px 20px;
+            width: 320px;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+        h1 {
+            font-size: 15px;
+            margin: 0 0 12px 0;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .metric-label {
+            color: #94a3b8;
+        }
+        .metric-val {
+            font-weight: bold;
+            color: #f8fafc;
+        }
+        .section-divider {
+            border-top: 1px solid #1e293b;
+            margin: 10px 0;
+        }
+        .accent-cyan {
+            color: #00f0ff;
+        }
+        .accent-amber {
+            color: #fbbf24;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div id="hud">
+        <h1>6D Hexeract Engine</h1>
+        <div class="metric-row">
+            <span class="metric-label">Dimensie:</span>
+            <span class="metric-val">6D ($\mathbb{R}^6$)</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Vertices ($2^6$):</span>
+            <span class="metric-val accent-amber" id="vert-count">64</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Hamming Ribben ($d_H=1$):</span>
+            <span class="metric-val accent-cyan" id="edge-count">192</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Topologie:</span>
+            <span class="metric-val">Binaire Hexagrammen</span>
+        </div>
+        
+        <div class="section-divider"></div>
+        
+        <div class="metric-row">
+            <span class="metric-label">Rotatievlak $X_1 \wedge X_2$:</span>
+            <span class="metric-val" id="angle-1">0.00 rad</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Rotatievlak $X_3 \wedge X_4$:</span>
+            <span class="metric-val" id="angle-2">0.00 rad</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Rotatievlak $X_5 \wedge X_6$:</span>
+            <span class="metric-val" id="angle-3">0.00 rad</span>
+        </div>
+    </div>
+
+    <script>
+        // =======================================================
+        // 1. SCÈNE, CAMERA & RENDERER INITIALISATIE
+        // =======================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x07070b, 0.08);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 7.5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // =======================================================
+        // 2. GENERATIE VAN DE 6D VERTICES EN 192 RIBBEN
+        // =======================================================
+        const V6 = []; // 64 hoekpunten in {-1, 1}^6
+        for (let i = 0; i < 64; i++) {
+            const v = [];
+            for (let b = 0; b < 6; b++) {
+                v.push((i & (1 << b)) ? 1.0 : -1.0);
+            }
+            V6.push(v);
+        }
+
+        const edges = []; // 192 edges (Hamming afstand 1)
+        for (let i = 0; i < 64; i++) {
+            for (let j = i + 1; j < 64; j++) {
+                let diff = i ^ j;
+                // Controleer of er exact 1 bit verschilt (machtsgetal van 2)
+                if ((diff & (diff - 1)) === 0) {
+                    edges.push([i, j]);
+                }
+            }
+        }
+
+        // =======================================================
+        // 3. THREE.JS GEOMETRIE & PARTICLES
+        // =======================================================
+        // Ribben (LineSegments)
+        const lineGeo = new THREE.BufferGeometry();
+        const linePositions = new Float32Array(edges.length * 2 * 3);
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+        
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0x00d4ff,
+            transparent: true,
+            opacity: 0.45,
+            blending: THREE.AdditiveBlending
+        });
+        const edgeMesh = new THREE.LineSegments(lineGeo, lineMat);
+        scene.add(edgeMesh);
+
+        // Vertices (Points)
+        const pointGeo = new THREE.BufferGeometry();
+        const pointPositions = new Float32Array(64 * 3);
+        pointGeo.setAttribute('position', new THREE.BufferAttribute(pointPositions, 3));
+
+        // Dynamische Vertex Shader voor gloeiende punten
+        const pointMat = new THREE.PointsMaterial({
+            color: 0xffaa00,
+            size: 6.0,
+            sizeAttenuation: false,
+            transparent: true,
+            opacity: 0.9
+        });
+        const pointMesh = new THREE.Points(pointGeo, pointMat);
+        scene.add(pointMesh);
+
+        // =======================================================
+        // 4. 6D ROTATIE EN ORTHOGONALE 6D -> 3D PROJECTIE
+        // =======================================================
+        // Roteert een 6D vector over drie onafhankelijke 2D vlakken: (x0,x1), (x2,x3), (x4,x5)
+        function rotate6D(v, a1, a2, a3) {
+            const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+            const cos2 = Math.cos(a2), sin2 = Math.sin(a2);
+            const cos3 = Math.cos(a3), sin3 = Math.sin(a3);
+
+            return [
+                v[0] * cos1 - v[1] * sin1,
+                v[0] * sin1 + v[1] * cos1,
+                v[2] * cos2 - v[3] * sin2,
+                v[2] * sin2 + v[3] * cos2,
+                v[4] * cos3 - v[5] * sin3,
+                v[4] * sin3 + v[5] * cos3
+            ];
+        }
+
+        // Projecteert 6D coördinaten naar 3D
+        function project6Dto3D(v6) {
+            const scale = 0.75;
+            // Harmonische hoeken op basis van Scilab decompositie
+            const x = (v6[0] + 0.5 * v6[2] - 0.5 * v6[4]) * scale;
+            const y = (v6[1] + 0.866 * v6[2] + 0.866 * v6[4]) * scale;
+            const z = (v6[3] + 0.707 * v6[5]) * scale;
+            return [x, y, z];
+        }
+
+        // =======================================================
+        // 5. ANIMATIE- EN RENDER-LOOP
+        // =======================================================
+        const angleEl1 = document.getElementById('angle-1');
+        const angleEl2 = document.getElementById('angle-2');
+        const angleEl3 = document.getElementById('angle-3');
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            const t = timestamp * 0.0008;
+            
+            // Drie rotatiehoeken voor SO(6) dynamica
+            const a1 = t * 0.7;
+            const a2 = t * 0.5;
+            const a3 = t * 0.3;
+
+            // 1. Bereken alle getransformeerde 3D posities
+            const current3D = [];
+            const pArr = pointGeo.attributes.position.array;
+            
+            for (let i = 0; i < 64; i++) {
+                const rot = rotate6D(V6[i], a1, a2, a3);
+                const p3 = project6Dto3D(rot);
+                current3D.push(p3);
+
+                pArr[i * 3 + 0] = p3[0];
+                pArr[i * 3 + 1] = p3[1];
+                pArr[i * 3 + 2] = p3[2];
+            }
+            pointGeo.attributes.position.needsUpdate = true;
+
+            // 2. Update de 192 rib-segmenten
+            const lArr = lineGeo.attributes.position.array;
+            let ptr = 0;
+            for (let k = 0; k < edges.length; k++) {
+                const p1 = current3D[edges[k][0]];
+                const p2 = current3D[edges[k][1]];
+
+                lArr[ptr++] = p1[0];
+                lArr[ptr++] = p1[1];
+                lArr[ptr++] = p1[2];
+
+                lArr[ptr++] = p2[0];
+                lArr[ptr++] = p2[1];
+                lArr[ptr++] = p2[2];
+            }
+            lineGeo.attributes.position.needsUpdate = true;
+
+            // Subtiele scènerotatie voor dieptewerking
+            scene.rotation.y = t * 0.15;
+            scene.rotation.x = Math.sin(t * 0.1) * 0.1;
+
+            // Update telemetrie HUD
+            angleEl1.textContent = `${(a1 % (2 * Math.PI)).toFixed(2)} rad`;
+            angleEl2.textContent = `${(a2 % (2 * Math.PI)).toFixed(2)} rad`;
+            angleEl3.textContent = `${(a3 % (2 * Math.PI)).toFixed(2)} rad`;
+
+            renderer.render(scene, camera);
+        }
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate(0);
+    </script>
+</body>
+</html>
