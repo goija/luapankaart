@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Gelaagde Engine & Console (V26 - Draggable Camera, Overlays & Mobiel UI)</title>
+    <title>Gelaagde Engine & Console (V30 - Livestream Map Layer & Transparantie)</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <!-- Proj4JS voor UTM projectie -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-
+    
     <style>
         body { margin: 0; display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1117; color: #c9d1d9; height: 100vh; overflow: hidden; }
         
@@ -27,7 +27,6 @@
         
         input[type=range] { width: 100%; margin-top: 3px; cursor: grab; accent-color: #58a6ff; }
         input[type=range]:active { cursor: grabbing; }
-
         .btn-red { background-color: #da3633; color: white; border: none; }
         .btn-red:hover { background-color: #b32d2a; }
         .btn-blue { background-color: #3b82f6; color: white; border: none; font-weight: bold; }
@@ -64,22 +63,32 @@
         .draggable-widget {
             position: absolute; background: rgba(13, 17, 23, 0.95); border: 1px solid #30363d; border-radius: 6px;
             z-index: 2000; box-shadow: 0 8px 25px rgba(0,0,0,0.9); color: #c9d1d9; font-family: monospace; font-size: 11px;
-            display: flex; flex-direction: column; backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; backdrop-filter: blur(8px); transition: opacity 0.2s;
         }
         #info-console { right: 20px; top: 20px; width: 320px; max-height: 90vh; }
-        #camera-container { left: 50px; top: 50px; width: 340px; display: none; }
-
+        
+        #camera-container { 
+            left: 50px; top: 50px; width: 360px; min-width: 280px; min-height: 380px; display: none; 
+        }
+        
         .widget-header {
             background: #21262d; padding: 10px; border-bottom: 1px solid #30363d; font-weight: bold; color: #58a6ff; 
             cursor: grab; border-radius: 6px 6px 0 0; text-align: center; font-size: 12px; text-transform: uppercase;
+            flex-shrink: 0;
         }
         .widget-header:active { cursor: grabbing; }
         #console-fixed { padding: 12px; border-bottom: 1px solid #30363d; background: rgba(22, 27, 34, 0.8); }
         #console-content { padding: 12px; overflow-y: auto; flex-grow: 1; }
         
         .console-sectie { margin-bottom: 15px; border-bottom: 1px dashed #30363d; padding-bottom: 12px; }
-        .console-sectie:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         
+        /* Video Weergave (Meegroeiend) */
+        #webrtc-wrapper {
+            width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; 
+            overflow: hidden; background: #000; cursor: grab; min-height: 150px;
+        }
+        #webrtc-wrapper:active { cursor: grabbing; }
+
         .coord-box {
             background: #0d1117; padding: 6px; border-radius: 4px; border: 1px solid #21262d;
             margin-bottom: 8px; font-size: 10px; color: #58a6ff; display: flex; justify-content: space-between;
@@ -89,37 +98,35 @@
         #mobiel-menu-knop { 
             position: absolute; top: 15px; left: 15px; z-index: 100000; 
             background: #e94560; color: white; border: none; padding: 10px 16px; 
-            font-size: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; 
-            display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace;
+            font-size: 14px; border-radius: 6px; font-weight: bold; display: none; 
         }
         .sluit-menu-knop {
             display: none; background: #da3633; color: white; border: none; 
-            width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: bold;
         }
 
         @media (max-width: 768px) {
-            #mobiel-menu-knop { display: block; top: auto; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; text-align: center; padding: 14px; font-size:16px;}
+            #mobiel-menu-knop { display: block; top: auto; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; text-align: center; font-size: 16px; }
             .sluit-menu-knop { display: block; }
             #sidebar { 
                 position: absolute; left: 0; bottom: -100%; width: 100%; height: 75vh; max-width: 100%;
-                transition: bottom 0.3s ease; z-index: 100001; box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
-                border-right: none; border-top: 2px solid #30363d; border-radius: 12px 12px 0 0;
+                transition: bottom 0.3s ease; z-index: 100001; 
+                border-top: 2px solid #30363d; border-radius: 12px 12px 0 0;
             }
             #sidebar.actief { bottom: 0; }
-            #info-console { width: calc(100% - 30px); left: 15px; right: auto; top: 15px; max-height: calc(100vh - 120px); z-index: 99999; }
-            #camera-container { width: calc(100% - 30px) !important; left: 15px !important; top: 15px !important; }
+            #info-console { width: calc(100% - 30px); left: 15px; top: 15px; right: auto; max-height: calc(100vh - 120px); z-index: 99999;}
+            #camera-container { width: calc(100% - 30px) !important; left: 15px !important; top: 15px !important;}
         }
     </style>
 </head>
 <body>
 
-    <!-- Mobiele Menu Toggle (Onderaan) -->
     <button id="mobiel-menu-knop" onclick="document.getElementById('sidebar').classList.toggle('actief')">☰ GEREEDSCHAPPEN</button>
 
     <!-- Zijbalk -->
     <div id="sidebar">
         <button class="sluit-menu-knop" onclick="document.getElementById('sidebar').classList.remove('actief')">✕ Sluit Menu</button>
-        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V26</button>
+        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V30</button>
 
         <!-- ZOEKEN / GEOCODING & COÖRDINATEN -->
         <h2>9. Zoeken, UTM & Schaal</h2>
@@ -183,12 +190,20 @@
         <!-- WEBRTC & HARDWARE SENSOREN -->
         <h2>10. Hardware Sensoren & WebRTC</h2>
         <div class="control-group">
-            <label style="color:#8b949e; margin-bottom:2px;">Live Camera (Zwevend Venster):</label>
+            <label style="color:#8b949e; margin-bottom:2px;">Live Camera Bediening:</label>
             <div class="flex-row">
-                <button class="btn-blue" onclick="startCamera()">📷 Start Camera</button>
-                <button class="btn-orange" onclick="wisselCamera()">🔄 Wissel (Achter/Voor)</button>
+                <button class="btn-green" onclick="startCamera()">▶ Start Livefeed</button>
+                <button class="btn-red" onclick="stopCamera()">⏹ Stop Livefeed</button>
             </div>
+            <button class="btn-orange" onclick="wisselCamera()" style="margin-bottom:10px;">🔄 Wissel (Achter/Voor)</button>
             
+            <!-- NIEUW: Projecteer als échte Kaartlaag (Laag 3) -->
+            <label style="color:#8b949e; margin-bottom:2px;">Livefeed als Kaartlaag (Coördinaten in Systeemtool):</label>
+            <div class="flex-row" style="margin-bottom:10px;">
+                <button class="btn-blue" onclick="projecteerLivefeed()" style="flex:2;">📽 Projecteer als Laag 3</button>
+                <button class="btn-red" onclick="wisLaag(3)" style="flex:1;">Wis Laag 3</button>
+            </div>
+
             <label style="color:#8b949e; margin-top:10px; margin-bottom:2px;">Hardware API (Telescoop / RWS Sensoren):</label>
             <select id="hardware-type" style="margin-bottom: 4px;">
                 <option value="9600">RWS Waterpeilsensor (NMEA - 9600 Baud)</option>
@@ -313,16 +328,46 @@
     <div id="map-wrapper">
         <div id="map"></div>
         
-        <!-- Zwevend Camera Venster -->
+        <!-- Zwevend Camera Venster (Nu met Custom Rand-Resizers & Venster Transparantie Slider) -->
         <div id="camera-container" class="draggable-widget">
-            <div id="camera-header" class="widget-header">📷 Live Camera (Sleepbaar)</div>
-            <div style="background:#010409; position:relative;">
-                <video id="webrtc-video" autoplay playsinline style="width: 100%; display: block;"></video>
+            <div id="camera-header" class="widget-header">📷 Live Camera (Sleepbaar & Schaalbaar)</div>
+            
+            <!-- Venster Transparantie Controls -->
+            <div style="background:#161b22; padding:4px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363d;">
+                <span style="font-size:10px; font-weight:bold; color:#8b949e;">Transparantie Venster:</span>
+                <input type="range" min="0.1" max="1" step="0.05" value="1" style="width:120px; margin:0;" oninput="document.getElementById('camera-container').style.opacity = this.value">
             </div>
-            <div style="padding:6px; display:flex; gap:4px; background:#161b22; border-radius:0 0 6px 6px;">
-                <button class="btn-green" onclick="neemFoto()">📸 Sla Foto Op</button>
-                <button class="btn-red" id="btn-opname" onclick="toggleOpname()">⏺ Opnemen</button>
-                <button class="btn-blue" onclick="sluitCamera()">✕ Sluit</button>
+            
+            <div style="background:#010409; position:relative; flex-grow: 1; display: flex; flex-direction: column;">
+                <div id="webrtc-wrapper">
+                    <video id="webrtc-video" autoplay playsinline style="width: 100%; display: block; transform-origin: center center; transition: transform 0.05s ease-out; pointer-events: none;"></video>
+                </div>
+            </div>
+
+            <!-- Extra Transformatie Knoppen voor Livestream -->
+            <div style="padding:6px; background:#161b22; border-top:1px solid #30363d; border-bottom:1px solid #30363d; flex-shrink: 0;">
+                <div class="flex-row" style="margin-bottom:4px;">
+                    <button onclick="camActie('zoomIn')">➕ Zoom In</button>
+                    <button onclick="camActie('zoomOut')">➖ Zoom Uit</button>
+                    <button onclick="camActie('reset')">🔄 Reset</button>
+                </div>
+                <div class="flex-row">
+                    <button onclick="camActie('flipX')">↔ Spiegel X</button>
+                    <button onclick="camActie('flipY')">↕ Spiegel Y</button>
+                    <button onclick="camActie('rotRechts')">↻ Draai 15°</button>
+                </div>
+            </div>
+            
+            <div style="padding:6px; display:flex; flex-direction:column; gap:6px; background:#161b22; border-radius:0 0 6px 6px; flex-shrink: 0;">
+                <div class="flex-row">
+                    <button class="btn-green" onclick="neemFoto()">📸 Sla Foto Op</button>
+                    <button class="btn-red" id="btn-opname" onclick="toggleOpname()">⏺ Opnemen</button>
+                </div>
+                <div class="flex-row">
+                    <button class="btn-blue" onclick="startCamera()">▶ Start Livefeed</button>
+                    <button class="btn-red" onclick="stopCamera()">⏹ Stop Livefeed</button>
+                    <button class="btn-orange" onclick="sluitCameraPaneel()">✕ Sluit Paneel</button>
+                </div>
             </div>
         </div>
 
@@ -333,39 +378,44 @@
             <div id="console-fixed">
                 <strong style="color: #58a6ff; font-size: 11px;">KAART ACHTERGROND</strong>
                 <select id="bg-keuze" onchange="veranderAchtergrond(this.value)" style="margin-top: 6px;">
-                    <option value="carto">Tiles: Carto Dark (Zwart)</option>
-                    <option value="osm">Tiles: OpenStreetMap</option>
-                    <option value="esri">Tiles: Esri Satelliet (Huidig)</option>
-                    <option value="topo">Tiles: OpenTopoMap (Landmeting)</option>
-                    <option value="seamap">Tiles: OpenSeaMap (Zeemetingen)</option>
-                    <option value="natgeo">Tiles: ESRI NatGeo (Werelderfgoed)</option>
-                    <option value="color-black">Kleur: Effen Zwart</option>
-                    <option value="color-green">Kleur: Chroma Groen</option>
-                    <option value="color-white">Kleur: Effen Wit</option>
+                    <optgroup label="Moderne Topografie">
+                        <option value="carto">Carto Dark (Huidig)</option>
+                        <option value="osm">OpenStreetMap</option>
+                        <option value="esri">Esri Satelliet</option>
+                    </optgroup>
+                    <optgroup label="Landmetingen & Topo">
+                        <option value="topo">OpenTopoMap (Reliëf)</option>
+                        <option value="esri-topo">Esri World Topo Map</option>
+                    </optgroup>
+                    <optgroup label="Archeologie & Zeemetingen">
+                        <option value="historical">OpenHistoricalMap (Historie)</option>
+                        <option value="seamap">OpenSeaMap (Zeemetingen)</option>
+                        <option value="natgeo">ESRI NatGeo (Werelderfgoed)</option>
+                    </optgroup>
+                    <optgroup label="Effengekleurd">
+                        <option value="color-black">Effen Zwart</option>
+                        <option value="color-green">Chroma Groen</option>
+                        <option value="color-white">Effen Wit</option>
+                    </optgroup>
                 </select>
             </div>
-
+            
             <div id="console-content">
                 <div id="console-leeg" style="color:#8b949e; text-align:center; padding-top:10px;">Geen actieve lagen</div>
 
                 <!-- DYNAMISCHE CONTROLS LAAG 1 -->
                 <div id="console-laag-1" class="console-sectie" style="display: none;">
                     <strong style="color: #58a6ff; font-size: 12px;">⚙ BEDIENING: LAAG 1 (BASIS)</strong><br>
-                    
                     <div class="coord-box">
                         <span>Lat: <span id="latLaag1" style="color:#fff;">-</span></span>
                         <span>Lng: <span id="lngLaag1" style="color:#fff;">-</span></span>
                     </div>
-                    
                     <label>Transparantie: <span id="valTrans1" style="color:#fff;">1.0</span></label>
                     <input type="range" min="0" max="1" step="0.05" value="1" id="transLaag1" oninput="updateLaagInputs(1)">
-                    
                     <label>Schaal (Scrollen mag): <span id="valSchaal1" style="color:#fff;">1.00x</span></label>
                     <input type="range" min="0.1" max="5" step="0.05" value="1" id="schaalLaag1" oninput="updateLaagInputs(1)">
-                    
                     <label>Rotatie: <span id="valRot1" style="color:#fff;">0°</span></label>
                     <input type="range" min="-180" max="180" step="1" value="0" id="rotLaag1" oninput="updateLaagInputs(1)">
-                    
                     <div class="flex-row" style="margin-top: 5px;">
                         <button onclick="spiegelLaag(1, 'x')">↔ Spiegel X</button>
                         <button onclick="spiegelLaag(1, 'y')">↕ Spiegel Y</button>
@@ -375,27 +425,40 @@
                 <!-- DYNAMISCHE CONTROLS LAAG 2 -->
                 <div id="console-laag-2" class="console-sectie" style="display: none;">
                     <strong style="color: #58a6ff; font-size: 12px;">⚙ BEDIENING: LAAG 2 (TOOLS)</strong><br>
-                    
                     <div class="coord-box">
                         <span>Lat: <span id="latLaag2" style="color:#fff;">-</span></span>
                         <span>Lng: <span id="lngLaag2" style="color:#fff;">-</span></span>
                     </div>
-
                     <label>Transparantie: <span id="valTrans2" style="color:#fff;">1.0</span></label>
                     <input type="range" min="0" max="1" step="0.05" value="1" id="transLaag2" oninput="updateLaagInputs(2)">
-                    
                     <label>Schaal (Scrollen mag): <span id="valSchaal2" style="color:#fff;">1.00x</span></label>
                     <input type="range" min="0.1" max="5" step="0.05" value="1" id="schaalLaag2" oninput="updateLaagInputs(2)">
-                    
                     <label>Rotatie: <span id="valRot2" style="color:#fff;">0°</span></label>
                     <input type="range" min="-180" max="180" step="1" value="0" id="rotLaag2" oninput="updateLaagInputs(2)">
-                    
                     <div class="flex-row" style="margin-top: 5px;">
                         <button onclick="spiegelLaag(2, 'x')">↔ Spiegel X</button>
                         <button onclick="spiegelLaag(2, 'y')">↕ Spiegel Y</button>
                     </div>
                 </div>
 
+                <!-- DYNAMISCHE CONTROLS LAAG 3 (LIVEFEED OP KAART) -->
+                <div id="console-laag-3" class="console-sectie" style="display: none;">
+                    <strong style="color: #58a6ff; font-size: 12px;">⚙ BEDIENING: LAAG 3 (LIVEFEED OP KAART)</strong><br>
+                    <div class="coord-box">
+                        <span>Lat: <span id="latLaag3" style="color:#fff;">-</span></span>
+                        <span>Lng: <span id="lngLaag3" style="color:#fff;">-</span></span>
+                    </div>
+                    <label>Transparantie: <span id="valTrans3" style="color:#fff;">1.0</span></label>
+                    <input type="range" min="0" max="1" step="0.05" value="1" id="transLaag3" oninput="updateLaagInputs(3)">
+                    <label>Schaal (Scrollen mag): <span id="valSchaal3" style="color:#fff;">1.00x</span></label>
+                    <input type="range" min="0.1" max="5" step="0.05" value="1" id="schaalLaag3" oninput="updateLaagInputs(3)">
+                    <label>Rotatie: <span id="valRot3" style="color:#fff;">0°</span></label>
+                    <input type="range" min="-180" max="180" step="1" value="0" id="rotLaag3" oninput="updateLaagInputs(3)">
+                    <div class="flex-row" style="margin-top: 5px;">
+                        <button onclick="spiegelLaag(3, 'x')">↔ Spiegel X</button>
+                        <button onclick="spiegelLaag(3, 'y')">↕ Spiegel Y</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -405,7 +468,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
     <script>
-        // --- DRAG LOGICA VOOR WIDGETS (Werkt voor muis en touch) ---
+        // --- DRAG LOGICA VOOR WIDGETS ---
         function makeDraggable(elmnt, headerEl) {
             var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             headerEl.onmousedown = dragMouseDown;
@@ -443,22 +506,79 @@
                 document.ontouchend = null; document.ontouchmove = null;
             }
         }
-        
+
+        // --- RESIZE LOGICA VOOR WIDGETS (Aan de buitenzijden) ---
+        function makeResizable(elmnt) {
+            const resizerR = document.createElement('div');
+            resizerR.style.cssText = 'position:absolute; right:0; top:0; width:10px; height:100%; cursor:e-resize; z-index:100;';
+            const resizerB = document.createElement('div');
+            resizerB.style.cssText = 'position:absolute; left:0; bottom:0; width:100%; height:10px; cursor:s-resize; z-index:100;';
+            const resizerBR = document.createElement('div');
+            // Klein visueel driehoekje in de hoek zodat je ziet dat je hier kunt schalen
+            resizerBR.style.cssText = 'position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:se-resize; z-index:101; background: linear-gradient(135deg, transparent 50%, rgba(88, 166, 255, 0.6) 50%); border-bottom-right-radius: 6px;';
+            
+            elmnt.appendChild(resizerR);
+            elmnt.appendChild(resizerB);
+            elmnt.appendChild(resizerBR);
+
+            let startX, startY, startWidth, startHeight, currentResizer;
+
+            function initDrag(e) {
+                e.preventDefault();
+                startX = e.clientX || e.touches[0].clientX;
+                startY = e.clientY || e.touches[0].clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(elmnt).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(elmnt).height, 10);
+                document.addEventListener('mousemove', doDrag, {passive: false});
+                document.addEventListener('mouseup', stopDrag, false);
+                document.addEventListener('touchmove', doDrag, {passive: false});
+                document.addEventListener('touchend', stopDrag, false);
+            }
+
+            function doDrag(e) {
+                e.preventDefault();
+                let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                if (currentResizer === resizerR || currentResizer === resizerBR) {
+                    elmnt.style.width = (startWidth + clientX - startX) + 'px';
+                }
+                if (currentResizer === resizerB || currentResizer === resizerBR) {
+                    elmnt.style.height = (startHeight + clientY - startY) + 'px';
+                }
+            }
+
+            function stopDrag() {
+                document.removeEventListener('mousemove', doDrag, false);
+                document.removeEventListener('mouseup', stopDrag, false);
+                document.removeEventListener('touchmove', doDrag, false);
+                document.removeEventListener('touchend', stopDrag, false);
+            }
+
+            [resizerR, resizerB, resizerBR].forEach(resizer => {
+                resizer.addEventListener('mousedown', function(e) { currentResizer = resizer; initDrag(e); });
+                resizer.addEventListener('touchstart', function(e) { currentResizer = resizer; initDrag(e); }, {passive: false});
+            });
+        }
+
         makeDraggable(document.getElementById("info-console"), document.getElementById("console-header"));
         makeDraggable(document.getElementById("camera-container"), document.getElementById("camera-header"));
+        makeResizable(document.getElementById("camera-container"));
+        makeResizable(document.getElementById("info-console"));
 
         // --- 1. KAART & ACHTERGROND INITIALISATIE ---
         const map = L.map('map', { center: [52.267, 5.250], zoom: 12, zoomSnap: 0.1, maxZoom: 28, attributionControl: false, zoomControl: false });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-        L.control.scale({imperial: false}).addTo(map);
-        
+
         const cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxNativeZoom: 20, maxZoom: 28 });
         const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 28 });
         const esriLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 18, maxZoom: 28 });
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxNativeZoom: 17, maxZoom: 28 });
         const seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { maxNativeZoom: 18, maxZoom: 28 });
         const natGeoLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 28 });
-
+        const historicalLayer = L.tileLayer('https://tile-api.openhistoricalmap.org/osm-ohm/{z}/{x}/{y}.png', { maxNativeZoom: 18, maxZoom: 28 });
+        const esriTopoLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 18, maxZoom: 28 });
+        
         cartoLayer.addTo(map);
 
         window.veranderAchtergrond = function(keuze) {
@@ -468,77 +588,161 @@
             if (map.hasLayer(topoLayer)) map.removeLayer(topoLayer);
             if (map.hasLayer(seaMapLayer)) map.removeLayer(seaMapLayer);
             if (map.hasLayer(natGeoLayer)) map.removeLayer(natGeoLayer);
-
+            if (map.hasLayer(historicalLayer)) map.removeLayer(historicalLayer);
+            if (map.hasLayer(esriTopoLayer)) map.removeLayer(esriTopoLayer);
+            
             let mapDiv = document.getElementById('map');
             
             if (keuze === 'carto') { cartoLayer.addTo(map); mapDiv.style.backgroundColor = 'transparent'; }
             else if (keuze === 'osm') { osmLayer.addTo(map); mapDiv.style.backgroundColor = '#ddd'; }
             else if (keuze === 'esri') { esriLayer.addTo(map); mapDiv.style.backgroundColor = '#000'; }
             else if (keuze === 'topo') { topoLayer.addTo(map); mapDiv.style.backgroundColor = '#ddd'; }
+            else if (keuze === 'esri-topo') { esriTopoLayer.addTo(map); mapDiv.style.backgroundColor = '#ddd'; }
             else if (keuze === 'seamap') { osmLayer.addTo(map); seaMapLayer.addTo(map); mapDiv.style.backgroundColor = '#a3cbe8'; } 
+            else if (keuze === 'historical') { historicalLayer.addTo(map); mapDiv.style.backgroundColor = '#e0ded8'; } 
             else if (keuze === 'natgeo') { natGeoLayer.addTo(map); mapDiv.style.backgroundColor = '#f1ebe0'; }
             else if (keuze === 'color-black') { mapDiv.style.backgroundColor = '#000000'; }
             else if (keuze === 'color-green') { mapDiv.style.backgroundColor = '#00ff00'; }
             else if (keuze === 'color-white') { mapDiv.style.backgroundColor = '#ffffff'; }
         };
 
-        // --- 10. WEBRTC CAMERA (MET OPNAME/FOTO) & WEB SERIAL API ---
+        // --- 10. WEBRTC CAMERA & TRANSFORMATIES MET PAN/SCROLL/KEYBOARD ---
         let currentStream = null;
         let useFrontCamera = false;
         let mediaRecorder;
         let recordedChunks = [];
         let isRecording = false;
+        
+        let camState = { zoom: 1, rot: 0, flipX: 1, flipY: 1, panX: 0, panY: 0 };
+        let isDraggingVid = false;
+        let startVidX, startVidY;
+
+        const vidWrapper = document.getElementById('webrtc-wrapper');
+
+        vidWrapper.addEventListener('mousedown', (e) => {
+            isDraggingVid = true;
+            startVidX = e.clientX - camState.panX;
+            startVidY = e.clientY - camState.panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingVid) return;
+            camState.panX = e.clientX - startVidX;
+            camState.panY = e.clientY - startVidY;
+            updateCameraWeergave();
+        });
+
+        window.addEventListener('mouseup', () => { isDraggingVid = false; });
+        window.addEventListener('mouseleave', () => { isDraggingVid = false; });
+
+        vidWrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) { camState.zoom += 0.1; }
+            else { camState.zoom = Math.max(0.2, camState.zoom - 0.1); }
+            updateCameraWeergave();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+            if (document.getElementById('camera-container').style.display === 'none') return;
+
+            const step = 25;
+            switch(e.key) {
+                case '+': case '=': 
+                    camState.zoom += 0.1; updateCameraWeergave(); break;
+                case '-': case '_': 
+                    camState.zoom = Math.max(0.2, camState.zoom - 0.1); updateCameraWeergave(); break;
+                case 'ArrowUp': 
+                    e.preventDefault(); camState.panY += step; updateCameraWeergave(); break;
+                case 'ArrowDown': 
+                    e.preventDefault(); camState.panY -= step; updateCameraWeergave(); break;
+                case 'ArrowLeft': 
+                    e.preventDefault(); camState.panX += step; updateCameraWeergave(); break;
+                case 'ArrowRight': 
+                    e.preventDefault(); camState.panX -= step; updateCameraWeergave(); break;
+            }
+        });
 
         window.startCamera = async function() {
             const videoElement = document.getElementById('webrtc-video');
             const camContainer = document.getElementById('camera-container');
-            
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-
+            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
             const constraints = { video: { facingMode: useFrontCamera ? "user" : "environment" }, audio: false };
-
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 camContainer.style.display = 'flex';
                 videoElement.srcObject = currentStream;
-            } catch (err) {
-                try {
-                    currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    camContainer.style.display = 'flex';
-                    videoElement.srcObject = currentStream;
-                } catch (fallbackErr) {
-                    alert("Kan camera niet benaderen. Controleer permissies of gebruik HTTPS/localhost.");
-                }
-            }
+            } catch (err) { alert("Kan camera niet benaderen."); }
         }
 
-        window.sluitCamera = function() {
-            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+        window.stopCamera = function() {
+            if (currentStream) { 
+                currentStream.getTracks().forEach(track => track.stop()); 
+                currentStream = null;
+            }
+            document.getElementById('webrtc-video').srcObject = null;
+        }
+
+        window.sluitCameraPaneel = function() {
+            window.stopCamera();
             document.getElementById('camera-container').style.display = 'none';
         }
 
         window.wisselCamera = function() {
             useFrontCamera = !useFrontCamera;
-            const camContainer = document.getElementById('camera-container');
-            if (camContainer.style.display !== 'none') { startCamera(); } else { alert("Start eerst de camera."); }
+            if (document.getElementById('camera-container').style.display !== 'none') { window.startCamera(); }
+        }
+
+        window.camActie = function(actie) {
+            if (actie === 'zoomIn') camState.zoom += 0.2;
+            if (actie === 'zoomOut') camState.zoom = Math.max(0.2, camState.zoom - 0.2);
+            if (actie === 'flipX') camState.flipX *= -1;
+            if (actie === 'flipY') camState.flipY *= -1;
+            if (actie === 'rotRechts') camState.rot += 15;
+            if (actie === 'reset') camState = { zoom: 1, rot: 0, flipX: 1, flipY: 1, panX: 0, panY: 0 };
+            updateCameraWeergave();
+        };
+
+        function updateCameraWeergave() {
+            const vid = document.getElementById('webrtc-video');
+            vid.style.transform = `translate(${camState.panX}px, ${camState.panY}px) scale(${camState.zoom}) scaleX(${camState.flipX}) scaleY(${camState.flipY}) rotate(${camState.rot}deg)`;
         }
 
         window.neemFoto = function() {
             const video = document.getElementById('webrtc-video');
-            if(!currentStream) return;
+            if(!currentStream) { alert("Camera is niet gestart."); return; }
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+            const ctx = canvas.getContext('2d');
+            
+            ctx.translate(canvas.width / 2 + camState.panX, canvas.height / 2 + camState.panY);
+            ctx.rotate(camState.rot * Math.PI / 180);
+            ctx.scale(camState.zoom * camState.flipX, camState.zoom * camState.flipY);
+            ctx.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            
             const dataUrl = canvas.toDataURL('image/png');
             const a = document.createElement('a');
             a.href = dataUrl; a.download = `foto_veldwerk_${Date.now()}.png`; a.click();
         }
 
+        window.maakFotoVoorLaag = function(laagNummer) {
+            const video = document.getElementById('webrtc-video');
+            if (!currentStream) { alert("Start eerst de live camera."); return; }
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.translate(canvas.width / 2 + camState.panX, canvas.height / 2 + camState.panY);
+            ctx.rotate(camState.rot * Math.PI / 180);
+            ctx.scale(camState.zoom * camState.flipX, camState.zoom * camState.flipY);
+            ctx.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            
+            laadAfbeeldingInLaag(laagNummer, canvas.toDataURL('image/png'));
+        }
+
         window.toggleOpname = function() {
             const btn = document.getElementById('btn-opname');
-            if (!currentStream) return;
+            if (!currentStream) { alert("Camera is niet gestart."); return; }
             
             if (!isRecording) {
                 recordedChunks = [];
@@ -558,20 +762,6 @@
                 isRecording = false;
                 btn.innerText = '⏺ Opnemen'; btn.style.backgroundColor = '#da3633';
             }
-        }
-
-        window.maakFotoVoorLaag = function(laagNummer) {
-            const video = document.getElementById('webrtc-video');
-            const camContainer = document.getElementById('camera-container');
-            if (!currentStream || camContainer.style.display === 'none') {
-                alert("Start eerst de live camera om een snapshot voor een laag te maken.");
-                return;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            const dataUrl = canvas.toDataURL('image/png');
-            laadAfbeeldingInLaag(laagNummer, dataUrl);
         }
 
         window.connectHardwareSerial = async function() {
@@ -597,50 +787,43 @@
             }
         }
 
-        // --- 2. HEX RASTER LOGICA (DYNAMISCH BEELDVULLEND) ---
+        // --- 2. HEX RASTER LOGICA ---
         let hexLayer;
         let rasterRotatie = 180;
         let symmetrieSchaal = 1;
 
         function tekenHexRaster() {
             if (hexLayer) map.removeLayer(hexLayer);
-            const isZichtbaar = document.getElementById('gridToggleCheckbox').checked;
-            if (!isZichtbaar) return;
-
+            if (!document.getElementById('gridToggleCheckbox').checked) return;
             const bounds = map.getBounds();
-            const w = bounds.getEast() - bounds.getWest();
-            const h = bounds.getNorth() - bounds.getSouth();
-            
+            const w = bounds.getEast() - bounds.getWest(); const h = bounds.getNorth() - bounds.getSouth();
             let minLng = bounds.getWest() - w * 0.75; let minLat = bounds.getSouth() - h * 0.75;
             let maxLng = bounds.getEast() + w * 0.75; let maxLat = bounds.getNorth() + h * 0.75;
-
             let basisKm = 2 * Math.pow(2, 12 - Math.min(20, map.getZoom()));
-            let actueleRadius = Math.max(0.0001, basisKm * symmetrieSchaal);
-
-            let radiusDegX = actueleRadius / (111.32 * Math.cos(52.267 * (Math.PI/180)));
-            let radiusDegY = actueleRadius / 111.32;
-
+            let actRadius = Math.max(0.0001, basisKm * symmetrieSchaal);
+            
+            let radiusDegX = actRadius / (111.32 * Math.cos(52.267 * (Math.PI/180)));
+            let radiusDegY = actRadius / 111.32;
             minLng = Math.floor(minLng / (radiusDegX * 3)) * (radiusDegX * 3);
             minLat = Math.floor(minLat / (radiusDegY * 3)) * (radiusDegY * 3);
-
-            const bbox = [minLng, minLat, maxLng, maxLat];
+            
             try {
-                const basisRaster = turf.hexGrid(bbox, actueleRadius, { units: 'kilometers' });
+                const basisRaster = turf.hexGrid([minLng, minLat, maxLng, maxLat], actRadius, { units: 'kilometers' });
                 turf.transformRotate(basisRaster, rasterRotatie, { pivot: turf.point([5.250, 52.267]), mutate: true });
                 hexLayer = L.geoJSON(basisRaster, { style: { color: "#1f6feb", weight: 1, fillOpacity: 0, opacity: 0.4 }, interactive: false }).addTo(map);
             } catch(e) {}
         }
-        map.on('moveend', tekenHexRaster);
-        setTimeout(tekenHexRaster, 200);
+        map.on('moveend', tekenHexRaster); setTimeout(tekenHexRaster, 200);
 
         window.zetRasterRotatie = function(waarde) { rasterRotatie = parseFloat(waarde); document.getElementById('gridRotatieSlider').value = rasterRotatie; tekenHexRaster(); }
-        window.toggleHexRaster = function(zichtbaar) { if (zichtbaar) { tekenHexRaster(); } else { if (hexLayer) map.removeLayer(hexLayer); } }
+        window.toggleHexRaster = function(zichtbaar) { if(zichtbaar)tekenHexRaster(); else if(hexLayer)map.removeLayer(hexLayer); }
         window.zetSymmetrieSchaal = function(waarde) { symmetrieSchaal = parseFloat(waarde); tekenHexRaster(); }
 
-        // --- 3. VRIJE BAKENS ---
+        // --- 3. VRIJE BAKENS EN LIJNEN NETWERK ---
         let vrijeMarkers = {};
         let actieveVerbindingsLijn = null;
         let bakenIteratieTeller = 1;
+        let meetLaagActief = false; 
 
         function formatUTM(lat, lng) {
             let zone = Math.floor((lng + 180) / 6) + 1;
@@ -658,7 +841,6 @@
             let ingevoerdeNaam = inputVeld.value.trim();
             let naam = ingevoerdeNaam !== "" ? ingevoerdeNaam : `Baken ${bakenIteratieTeller}`;
             if (ingevoerdeNaam === "") bakenIteratieTeller++;
-
             let vorm = document.getElementById("bakenVorm").value;
             let kleur = document.getElementById("bakenKleur").value;
             let center = map.getCenter();
@@ -667,120 +849,8 @@
             vrijeMarkers[id] = { id: id, naam: naam, vorm: vorm, kleur: kleur, rotatie: 0, flipX: 1, flipY: 1, marker: null };
             bouwBakenMarker(id, center);
             inputVeld.value = ""; 
-            if (meetLaagActief) herberekenMeetLaag();
+            if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
         };
-
-        // --- 8. OPGRAVINGSMATRIX & ARCHEO PRESETS ---
-        window.genereerOpgravingsMatrix = function() {
-            let center = map.getCenter();
-            let stapGrootte = 0.002; 
-            let putTeller = 1;
-            wisAlleVrijeMarkers(); 
-
-            for (let i = -1; i <= 1; i++) {
-                for (let j = -1; j <= 1; j++) {
-                    let lat = center.lat + (i * stapGrootte);
-                    let lng = center.lng + (j * stapGrootte * 1.5); 
-                    let id = 'matrix_' + Date.now() + '_' + putTeller;
-                    let naam = `Put ${i+2},${j+2}`;
-                    
-                    vrijeMarkers[id] = { id: id, naam: naam, vorm: 'vierkant', kleur: '#e3b341', rotatie: 0, flipX: 1, flipY: 1, marker: null };
-                    bouwBakenMarker(id, L.latLng(lat, lng));
-                    putTeller++;
-                }
-            }
-            updateLijnenNetwerk();
-            if (meetLaagActief) herberekenMeetLaag();
-        }
-
-        window.laadErfgoedPreset = function() {
-            const preset = document.getElementById('erfgoed-preset').value;
-            wisAlleVrijeMarkers();
-            
-            if (preset === 'reimerswaal') {
-                map.setView([51.503, 4.172], 13);
-                bouwBakenMarkerData('r1', 51.506, 4.170, 'Reimerswaal Centrum', '#da3633', 'cirkel');
-                bouwBakenMarkerData('r2', 51.501, 4.180, 'Oostelijke Stadswal', '#e3b341', 'vierkant');
-                bouwBakenMarkerData('r3', 51.498, 4.165, 'Verdronken Haven', '#388bfd', 'driehoek');
-            } else if (preset === 'schokland') {
-                map.setView([52.633, 5.777], 13);
-                bouwBakenMarkerData('s1', 52.635, 5.775, 'Oud Emmeloord (Noord)', '#da3633', 'cirkel');
-                bouwBakenMarkerData('s2', 52.630, 5.780, 'Middelbuurt (Centrum)', '#e3b341', 'vierkant');
-                bouwBakenMarkerData('s3', 52.624, 5.783, 'Zuidert', '#388bfd', 'driehoek');
-            } else if (preset === 'pompeii') {
-                map.setView([40.751, 14.487], 15);
-                bouwBakenMarkerData('p1', 40.749, 14.484, 'Forum (Pompeï)', '#da3633', 'vierkant');
-                bouwBakenMarkerData('p2', 40.751, 14.491, 'Amfitheater', '#e3b341', 'cirkel');
-            } else if (preset === 'heuneburg') {
-                map.setView([48.100, 9.416], 15);
-                bouwBakenMarkerData('h1', 48.100, 9.416, 'Heuneburg Heuvelfort', '#da3633', 'vierkant');
-            } else if (preset === 'troje') {
-                map.setView([39.9575, 26.2389], 15);
-                bouwBakenMarkerData('t1', 39.9575, 26.2389, 'Opgraving Troje', '#da3633', 'cirkel');
-            } else if (preset === 'gobekli') {
-                map.setView([37.2232, 38.9224], 16);
-                bouwBakenMarkerData('g1', 37.2232, 38.9224, 'Heiligdom Göbekli Tepe', '#e3b341', 'cirkel');
-            } else if (preset === 'knossos') {
-                map.setView([35.2979, 25.1632], 16);
-                bouwBakenMarkerData('k1', 35.2979, 25.1632, 'Paleis van Knossos', '#388bfd', 'vierkant');
-            } else if (preset === 'delphi') {
-                map.setView([38.4824, 22.5010], 16);
-                bouwBakenMarkerData('d1', 38.4824, 22.5010, 'Orakel van Delphi', '#2ea043', 'driehoek');
-            } else if (preset === 'vallei') {
-                map.setView([25.7402, 32.6014], 15);
-                bouwBakenMarkerData('v1', 25.7402, 32.6014, 'Necropool: Vallei der Koningen', '#da3633', 'driehoek');
-            } else if (preset === 'gizeh') {
-                map.setView([29.9792, 31.1342], 15);
-                bouwBakenMarkerData('giz1', 29.9792, 31.1342, 'Necropolis van Gizeh', '#e3b341', 'vierkant');
-            } else if (preset === 'mohenjo') {
-                map.setView([27.3292, 68.1388], 15);
-                bouwBakenMarkerData('m1', 27.3292, 68.1388, 'Nederzetting Mohenjo-Daro', '#e3b341', 'vierkant');
-            } else if (preset === 'stonehenge') {
-                map.setView([51.1789, -1.8262], 16);
-                bouwBakenMarkerData('st1', 51.1789, -1.8262, 'Heiligdom Stonehenge', '#388bfd', 'cirkel');
-            } else if (preset === 'avebury') {
-                map.setView([51.428, -1.854], 15);
-                bouwBakenMarkerData('ave1', 51.428, -1.854, 'Avebury Steencirkel', '#388bfd', 'cirkel');
-            } else if (preset === 'callanish') {
-                map.setView([58.197, -6.745], 15);
-                bouwBakenMarkerData('cal1', 58.197, -6.745, 'Callanish Stones', '#388bfd', 'cirkel');
-            } else if (preset === 'brodgar') {
-                map.setView([59.001, -3.229], 15);
-                bouwBakenMarkerData('bro1', 59.001, -3.229, 'Ring of Brodgar', '#388bfd', 'cirkel');
-            } else if (preset === 'carnac') {
-                map.setView([47.590, -3.082], 15);
-                bouwBakenMarkerData('car1', 47.590, -3.082, 'Carnac Alignements', '#388bfd', 'vierkant');
-            } else if (preset === 'doggerland') {
-                map.setView([54.5, 2.5], 7);
-                bouwBakenMarkerData('dog1', 54.5, 2.5, 'Doggerbank', '#388bfd', 'cirkel');
-                bouwBakenMarkerData('dog2', 53.5, 3.0, 'Zuidelijke Dogger', '#e3b341', 'vierkant');
-            } else if (preset === 'nehalennia') {
-                map.setView([51.6, 3.7], 11);
-                bouwBakenMarkerData('neh1', 51.616, 3.933, 'Tempel Colijnsplaat', '#e3b341', 'vierkant');
-                bouwBakenMarkerData('neh2', 51.566, 3.483, 'Tempel Domburg', '#e3b341', 'vierkant');
-            } else if (preset === 'alle_steencirkels') {
-                map.setView([54.0, -3.0], 6);
-                bouwBakenMarkerData('st1', 51.1789, -1.8262, 'Stonehenge', '#388bfd', 'cirkel');
-                bouwBakenMarkerData('ave1', 51.428, -1.854, 'Avebury Steencirkel', '#388bfd', 'cirkel');
-                bouwBakenMarkerData('cal1', 58.197, -6.745, 'Callanish Stones', '#388bfd', 'cirkel');
-                bouwBakenMarkerData('bro1', 59.001, -3.229, 'Ring of Brodgar', '#388bfd', 'cirkel');
-                bouwBakenMarkerData('car1', 47.590, -3.082, 'Carnac Alignements', '#388bfd', 'vierkant');
-            } else if (preset === 'palmyra') {
-                map.setView([34.550, 38.266], 15);
-                bouwBakenMarkerData('pal1', 34.550, 38.266, 'Ruïnes van Palmyra', '#da3633', 'cirkel');
-            } else if (preset === 'aleppo') {
-                map.setView([36.198, 37.162], 16);
-                bouwBakenMarkerData('ale1', 36.198, 37.162, 'Citadel van Aleppo', '#e3b341', 'vierkant');
-            }
-            
-            updateLijnenNetwerk();
-            if (meetLaagActief) herberekenMeetLaag();
-        }
-
-        function bouwBakenMarkerData(id, lat, lng, naam, kleur, vorm) {
-            vrijeMarkers[id] = { id: id, naam: naam, vorm: vorm, kleur: kleur, rotatie: 0, flipX: 1, flipY: 1, marker: null };
-            bouwBakenMarker(id, L.latLng(lat, lng));
-        }
 
         function genereerBakenSVG(baken) {
             let svgContent = '';
@@ -795,10 +865,10 @@
             `;
         }
 
-        function bouwBakenMarker(id, latlng) {
+        function bouwBakenMarker(id, latlng, skipUpdate = false) {
             let baken = vrijeMarkers[id];
             let customIcon = L.divIcon({ html: genereerBakenSVG(baken), className: '', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
-
+            
             if (!baken.marker) {
                 baken.marker = L.marker(latlng, { icon: customIcon, draggable: true, zIndexOffset: 1000 }).addTo(map);
                 baken.marker.bindPopup(genereerPopupHTML(id), { className: 'baken-popup', closeButton: false, autoPan: false });
@@ -812,15 +882,14 @@
                     if(latEl && lngEl) { latEl.innerText = pos.lat.toFixed(5); lngEl.innerText = pos.lng.toFixed(5); }
                     if(utmEl) { utmEl.innerText = formatUTM(pos.lat, pos.lng); }
                     updateLijnenNetwerk();
-                    if(meetLaagActief) herberekenMeetLaag();
+                    if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
                 });
-
                 baken.marker.on('dragend', function(e) {
                     baken.marker.setPopupContent(genereerPopupHTML(id));
-                    if(meetLaagActief) herberekenMeetLaag();
+                    if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
                 });
             } else { baken.marker.setIcon(customIcon); }
-            updateLijnenNetwerk();
+            if (!skipUpdate) updateLijnenNetwerk();
         }
 
         function genereerPopupHTML(id) {
@@ -857,7 +926,7 @@
                 map.removeLayer(vrijeMarkers[id].marker);
                 delete vrijeMarkers[id];
                 updateLijnenNetwerk();
-                if(meetLaagActief) herberekenMeetLaag();
+                if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
             }
         };
 
@@ -867,6 +936,103 @@
             if (actieveBakens.length < 2) return;
             const latlngs = actieveBakens.map(m => m.getLatLng());
             actieveVerbindingsLijn = L.polyline(latlngs, { color: '#8b949e', weight: 2, dashArray: '5, 10', opacity: 0.8 }).addTo(map);
+        }
+
+        // --- 8. OPGRAVINGSMATRIX & ERFGOED PRESETS ---
+        window.genereerOpgravingsMatrix = function() {
+            let center = map.getCenter();
+            let stapGrootte = 0.002; 
+            let putTeller = 1;
+            window.wisAlleVrijeMarkers(); 
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    let lat = center.lat + (i * stapGrootte);
+                    let lng = center.lng + (j * stapGrootte * 1.5); 
+                    let id = 'matrix_' + Date.now() + '_' + putTeller;
+                    let naam = `Put ${i+2},${j+2}`;
+                    
+                    vrijeMarkers[id] = { id: id, naam: naam, vorm: 'vierkant', kleur: '#e3b341', rotatie: 0, flipX: 1, flipY: 1, marker: null };
+                    bouwBakenMarker(id, L.latLng(lat, lng), true); 
+                    putTeller++;
+                }
+            }
+            updateLijnenNetwerk(); 
+            if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
+        }
+
+        window.laadErfgoedPreset = function() {
+            const preset = document.getElementById('erfgoed-preset').value;
+            window.wisAlleVrijeMarkers();
+            
+            function addM(id, lat, lng, naam, kleur, vorm) {
+                vrijeMarkers[id] = { id: id, naam: naam, vorm: vorm, kleur: kleur, rotatie: 0, flipX: 1, flipY: 1, marker: null };
+                bouwBakenMarker(id, L.latLng(lat, lng), true);
+            }
+
+            if (preset === 'reimerswaal') {
+                addM('r1', 51.506, 4.170, 'Reimerswaal Centrum', '#da3633', 'cirkel');
+                addM('r2', 51.501, 4.180, 'Oostelijke Stadswal', '#e3b341', 'vierkant');
+                addM('r3', 51.498, 4.165, 'Verdronken Haven', '#388bfd', 'driehoek');
+            } else if (preset === 'schokland') {
+                addM('s1', 52.635, 5.775, 'Oud Emmeloord (Noord)', '#da3633', 'cirkel');
+                addM('s2', 52.630, 5.780, 'Middelbuurt (Centrum)', '#e3b341', 'vierkant');
+                addM('s3', 52.624, 5.783, 'Zuidert', '#388bfd', 'driehoek');
+            } else if (preset === 'pompeii') {
+                addM('p1', 40.749, 14.484, 'Forum (Pompeï)', '#da3633', 'vierkant');
+                addM('p2', 40.751, 14.491, 'Amfitheater', '#e3b341', 'cirkel');
+            } else if (preset === 'heuneburg') {
+                addM('h1', 48.100, 9.416, 'Heuneburg Heuvelfort', '#da3633', 'vierkant');
+            } else if (preset === 'troje') {
+                addM('t1', 39.9575, 26.2389, 'Opgraving Troje', '#da3633', 'cirkel');
+            } else if (preset === 'gobekli') {
+                addM('g1', 37.2232, 38.9224, 'Heiligdom Göbekli Tepe', '#e3b341', 'cirkel');
+            } else if (preset === 'knossos') {
+                addM('k1', 35.2979, 25.1632, 'Paleis van Knossos', '#388bfd', 'vierkant');
+            } else if (preset === 'delphi') {
+                addM('d1', 38.4824, 22.5010, 'Orakel van Delphi', '#2ea043', 'driehoek');
+            } else if (preset === 'vallei') {
+                addM('v1', 25.7402, 32.6014, 'Necropool: Vallei der Koningen', '#da3633', 'driehoek');
+            } else if (preset === 'gizeh') {
+                addM('giz1', 29.9792, 31.1342, 'Necropolis van Gizeh', '#e3b341', 'vierkant');
+            } else if (preset === 'mohenjo') {
+                addM('m1', 27.3292, 68.1388, 'Nederzetting Mohenjo-Daro', '#e3b341', 'vierkant');
+            } else if (preset === 'stonehenge') {
+                addM('st1', 51.1789, -1.8262, 'Heiligdom Stonehenge', '#388bfd', 'cirkel');
+            } else if (preset === 'avebury') {
+                addM('ave1', 51.428, -1.854, 'Avebury Steencirkel', '#388bfd', 'cirkel');
+            } else if (preset === 'callanish') {
+                addM('cal1', 58.197, -6.745, 'Callanish Stones', '#388bfd', 'cirkel');
+            } else if (preset === 'brodgar') {
+                addM('bro1', 59.001, -3.229, 'Ring of Brodgar', '#388bfd', 'cirkel');
+            } else if (preset === 'carnac') {
+                addM('car1', 47.590, -3.082, 'Carnac Alignements', '#388bfd', 'vierkant');
+            } else if (preset === 'doggerland') {
+                addM('dog1', 54.5, 2.5, 'Doggerbank', '#388bfd', 'cirkel');
+                addM('dog2', 53.5, 3.0, 'Zuidelijke Dogger', '#e3b341', 'vierkant');
+            } else if (preset === 'nehalennia') {
+                addM('neh1', 51.616, 3.933, 'Tempel Colijnsplaat', '#e3b341', 'vierkant');
+                addM('neh2', 51.566, 3.483, 'Tempel Domburg', '#e3b341', 'vierkant');
+            } else if (preset === 'alle_steencirkels') {
+                addM('st1', 51.1789, -1.8262, 'Stonehenge', '#388bfd', 'cirkel');
+                addM('ave1', 51.428, -1.854, 'Avebury Steencirkel', '#388bfd', 'cirkel');
+                addM('cal1', 58.197, -6.745, 'Callanish Stones', '#388bfd', 'cirkel');
+                addM('bro1', 59.001, -3.229, 'Ring of Brodgar', '#388bfd', 'cirkel');
+                addM('car1', 47.590, -3.082, 'Carnac Alignements', '#388bfd', 'vierkant');
+            } else if (preset === 'palmyra') {
+                addM('pal1', 34.550, 38.266, 'Ruïnes van Palmyra', '#da3633', 'cirkel');
+            } else if (preset === 'aleppo') {
+                addM('ale1', 36.198, 37.162, 'Citadel van Aleppo', '#e3b341', 'vierkant');
+            }
+
+            updateLijnenNetwerk();
+            if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
+            
+            // Zoom in
+            let actieveBakens = Object.values(vrijeMarkers).map(b => b.marker).filter(m => m !== null);
+            if (actieveBakens.length > 0) {
+                const group = new L.featureGroup(actieveBakens); 
+                map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 16 });
+            }
         }
 
         // --- 6. DATA I/O (IMPORTEER & EXPORTEER) ---
@@ -886,6 +1052,7 @@
             const dataArr = verkrijgSysteemData();
             if (dataArr.length === 0) { alert("Geen markers om te exporteren."); return; }
             let exportPayload; let mimeType; let fileExt;
+            
             if (formaat === 'json') {
                 exportPayload = JSON.stringify(dataArr, null, 2); mimeType = "application/json"; fileExt = "json";
             } else if (formaat === 'geojson') {
@@ -900,16 +1067,19 @@
             } else if (formaat === 'bin') {
                 exportPayload = new TextEncoder().encode(JSON.stringify(dataArr)); mimeType = "application/octet-stream"; fileExt = "bin";
             }
+            
             const blob = new Blob([exportPayload], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `4D_Systeem_Export.${fileExt}`; a.click(); URL.revokeObjectURL(url);
         };
 
         window.wisAlleVrijeMarkers = function() {
-            for (let key in vrijeMarkers) { if (vrijeMarkers[key].marker) { map.removeLayer(vrijeMarkers[key].marker); } }
+            for (let key in vrijeMarkers) { 
+                if (vrijeMarkers[key].marker) { map.removeLayer(vrijeMarkers[key].marker); } 
+            }
             vrijeMarkers = {};
             if (actieveVerbindingsLijn) map.removeLayer(actieveVerbindingsLijn);
-            wisMeetLaag();
+            if (window.wisMeetLaag) window.wisMeetLaag();
         };
 
         window.importeerData = function(e) {
@@ -917,31 +1087,37 @@
             if (!file) return;
             const reader = new FileReader();
             const ext = file.name.split('.').pop().toLowerCase();
+            
             reader.onload = function(evt) {
                 try {
                     let data;
                     if (ext === 'bin') { data = JSON.parse(new TextDecoder("utf-8").decode(new Uint8Array(evt.target.result))); } 
                     else { data = JSON.parse(evt.target.result); }
-                    wisAlleVrijeMarkers(); 
+                    window.wisAlleVrijeMarkers(); 
+                    
                     if (data.type === "FeatureCollection") {
                         data.features.forEach(f => {
-                            const p = f.properties; const coords = f.geometry.coordinates;
+                            const p = f.properties; 
+                            const coords = f.geometry.coordinates;
                             let id = p.id || 'baken_' + Date.now() + Math.random();
-                            vrijeMarkers[id] = { id: id, naam: p.naam, vorm: p.vorm, kleur: p.kleur, rotatie: p.rotatie||0, flipX: p.flipX||1, flipY: p.flipY||1, marker: null };
-                            bouwBakenMarker(id, L.latLng(coords[1], coords[0]));
+                            vrijeMarkers[id] = { id: id, naam: p.naam || "Geïmporteerd Baken", vorm: p.vorm || "cirkel", kleur: p.kleur || "#388bfd", rotatie: p.rotatie||0, flipX: p.flipX||1, flipY: p.flipY||1, marker: null };
+                            bouwBakenMarker(id, L.latLng(coords[1], coords[0]), true); 
                         });
                     } else if (Array.isArray(data)) {
                         data.forEach(d => {
                             let id = d.id || 'baken_' + Date.now() + Math.random();
-                            vrijeMarkers[id] = { id: id, naam: d.naam, vorm: d.vorm, kleur: d.kleur, rotatie: d.rotatie||0, flipX: d.flipX||1, flipY: d.flipY||1, marker: null };
-                            bouwBakenMarker(id, L.latLng(d.lat, d.lng));
+                            vrijeMarkers[id] = { id: id, naam: d.naam || "Geïmporteerd Baken", vorm: d.vorm || "cirkel", kleur: d.kleur || "#388bfd", rotatie: d.rotatie||0, flipX: d.flipX||1, flipY: d.flipY||1, marker: null };
+                            bouwBakenMarker(id, L.latLng(d.lat, d.lng), true); 
                         });
                     }
+                    
                     updateLijnenNetwerk();
-                    if (meetLaagActief) herberekenMeetLaag();
+                    if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
+                    
                     let actieveBakens = Object.values(vrijeMarkers).map(b => b.marker).filter(m => m !== null);
                     if (actieveBakens.length > 0) {
-                        const group = new L.featureGroup(actieveBakens); map.fitBounds(group.getBounds(), { padding: [60, 60] });
+                        const group = new L.featureGroup(actieveBakens); 
+                        map.fitBounds(group.getBounds(), { padding: [60, 60], maxZoom: 16 });
                     }
                 } catch (err) { alert("Fout bij importeren van data. Bestand mogelijk corrupt."); console.error(err); }
                 e.target.value = ''; 
@@ -949,8 +1125,7 @@
             if (ext === 'bin') reader.readAsArrayBuffer(file); else reader.readAsText(file);
         };
 
-        // --- 7. AFSTANDSMETING & SCHUIFMETER LAAG ---
-        let meetLaagActief = false;
+        // --- 7. AFSTANDSMETING ---
         let meetLijn = null;
         let meetMarker = null;
         let meetAfstandMeters = 0;
@@ -960,54 +1135,46 @@
             const uiContainer = document.getElementById('meet-ui-container');
             const btn = document.getElementById('meet-toggle-btn');
             let actieveBakens = Object.values(vrijeMarkers).map(b => b.marker).filter(m => m !== null);
-
             if (meetLaagActief) {
                 if (actieveBakens.length < 2) { alert("Plaats minimaal 2 bakens om de meetlaag te activeren."); meetLaagActief = false; return; }
                 btn.classList.replace('btn-red', 'btn-green'); uiContainer.style.display = "block";
-                herberekenMeetLaag();
+                window.herberekenMeetLaag();
             } else {
                 btn.classList.replace('btn-green', 'btn-red'); uiContainer.style.display = "none";
-                wisMeetLaag();
+                window.wisMeetLaag();
             }
         }
 
-        window.veranderEenheid = function() { if (meetLaagActief) herberekenMeetLaag(); }
+        window.veranderEenheid = function() { if (meetLaagActief) window.herberekenMeetLaag(); }
 
         window.herberekenMeetLaag = function() {
             if (!meetLaagActief) return;
             let actieveBakens = Object.values(vrijeMarkers).map(b => b.marker).filter(m => m !== null);
             if (actieveBakens.length < 2) return;
-
-            wisMeetLaag(); 
+            window.wisMeetLaag(); 
             let latlngs = actieveBakens.map(m => m.getLatLng());
             meetAfstandMeters = 0;
             
             for (let i = 0; i < latlngs.length - 1; i++) { meetAfstandMeters += map.distance(latlngs[i], latlngs[i+1]); }
-
             const unitSelect = document.getElementById('meet-eenheid');
             const unitMultiplier = parseFloat(unitSelect.value);
             const unitText = unitSelect.options[unitSelect.selectedIndex].text.split(' ')[0]; 
-
             document.getElementById('meet-totaal').innerText = (meetAfstandMeters / unitMultiplier).toFixed(2) + ' ' + unitText;
-
             meetLijn = L.polyline(latlngs, { color: '#58a6ff', weight: 4, dashArray: '10, 10', opacity: 0.9 }).addTo(map);
             meetMarker = L.circleMarker(latlngs[0], { radius: 8, color: '#fff', fillColor: '#58a6ff', fillOpacity: 1, weight: 2 }).addTo(map);
-
-            updateMeetSlider();
+            window.updateMeetSlider();
         }
 
         window.updateMeetSlider = function() {
             if (!meetLaagActief || !meetMarker || !meetLijn) return;
             let actieveBakens = Object.values(vrijeMarkers).map(b => b.marker).filter(m => m !== null);
             if (actieveBakens.length < 2) return;
-
             const val = parseFloat(document.getElementById('meet-slider').value);
             const fraction = val / 100.0;
             const targetDist = meetAfstandMeters * fraction;
             
             let latlngs = actieveBakens.map(m => m.getLatLng());
             let traversedDist = 0; let curLat = latlngs[0].lat; let curLng = latlngs[0].lng;
-
             for (let i = 0; i < latlngs.length - 1; i++) {
                 let segmentDist = map.distance(latlngs[i], latlngs[i+1]);
                 if (traversedDist + segmentDist >= targetDist || i === latlngs.length - 2) {
@@ -1025,7 +1192,6 @@
             const unitSelect = document.getElementById('meet-eenheid');
             const unitMultiplier = parseFloat(unitSelect.value);
             const unitText = unitSelect.options[unitSelect.selectedIndex].text.split(' ')[0];
-
             const afgelegdMeters = meetAfstandMeters * fraction;
             document.getElementById('meet-afgelegd').innerText = (afgelegdMeters / unitMultiplier).toFixed(2) + ' ' + unitText;
             document.getElementById('meet-pct').innerText = val.toFixed(1) + '%';
@@ -1037,7 +1203,7 @@
             meetLijn = null; meetMarker = null;
         }
 
-        // --- 9. ZOEKEN / GEOCODING EN COÖRDINATEN PARSER & SCHAAL ---
+        // --- 9. ZOEKEN & SCHAAL ---
         window.zetSchaal = function(doelSchaal) {
             const centerLat = map.getCenter().lat;
             const metersPerPixel = (doelSchaal * 0.0254) / 96;
@@ -1060,7 +1226,7 @@
                     let id = 'baken_' + Date.now();
                     vrijeMarkers[id] = { id: id, naam: korteNaam, vorm: vorm, kleur: kleur, rotatie: 0, flipX: 1, flipY: 1, marker: null };
                     bouwBakenMarker(id, L.latLng(lat, lon));
-                    if(meetLaagActief) herberekenMeetLaag();
+                    if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
                 } else { alert("Plaats niet gevonden."); }
             } catch (error) { console.error("Geocoding API fout:", error); alert("Fout bij zoeken."); }
         }
@@ -1095,13 +1261,20 @@
                 let id = 'baken_' + Date.now(); let naam = `Coord: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
                 vrijeMarkers[id] = { id: id, naam: naam, vorm: vorm, kleur: kleur, rotatie: 0, flipX: 1, flipY: 1, marker: null };
                 bouwBakenMarker(id, L.latLng(coords.lat, coords.lng));
-                if (meetLaagActief) herberekenMeetLaag();
+                if (meetLaagActief && window.herberekenMeetLaag) window.herberekenMeetLaag();
             } else { alert("Ongeldig formaat. Gebruik: '48.1, 9.4' of '48° 6′ NB, 09° 25′ OL'"); }
         }
 
-        // --- 10. BEELDOVERLAYS IN DE CONSOLE LOGICA (LAAG 1 & 2) ---
-        let lagen = { 1: { marker: null, id: 'img-laag-1', schaal: 1.0, rotatie: 0, trans: 1.0, flipX: 1, flipY: 1 }, 2: { marker: null, id: 'img-laag-2', schaal: 1.0, rotatie: 0, trans: 1.0, flipX: 1, flipY: 1 } };
-        function checkConsoleLeeg() { document.getElementById('console-leeg').style.display = (!lagen[1].marker && !lagen[2].marker) ? 'block' : 'none'; }
+        // --- 11. BEELDOVERLAYS & LIVEFEED OP DE KAART ---
+        let lagen = { 
+            1: { marker: null, id: 'img-laag-1', schaal: 1.0, rotatie: 0, trans: 1.0, flipX: 1, flipY: 1 }, 
+            2: { marker: null, id: 'img-laag-2', schaal: 1.0, rotatie: 0, trans: 1.0, flipX: 1, flipY: 1 },
+            3: { marker: null, id: 'vid-laag-3', schaal: 1.0, rotatie: 0, trans: 1.0, flipX: 1, flipY: 1 } 
+        };
+
+        function checkConsoleLeeg() { 
+            document.getElementById('console-leeg').style.display = (!lagen[1].marker && !lagen[2].marker && !lagen[3].marker) ? 'block' : 'none'; 
+        }
 
         window.spiegelLaag = function(laagNummer, as) {
             if (!lagen[laagNummer].marker) return;
@@ -1119,7 +1292,7 @@
         }
 
         function laadAfbeeldingInLaag(laagNummer, imgUrl) {
-            if (lagen[laagNummer].marker) wisLaag(laagNummer);
+            if (lagen[laagNummer].marker) window.wisLaag(laagNummer);
             const iconHTML = `<div class="overlay-image-container"><img id="${lagen[laagNummer].id}" src="${imgUrl}" class="overlay-image" style="width: 400px;" onwheel="zoomLaagOpAfbeelding(event, ${laagNummer})"></div>`;
             const customIcon = L.divIcon({ html: iconHTML, className: '', iconSize: [400, "auto"], iconAnchor: [200, 100] });
             let centrum = map.getCenter();
@@ -1127,11 +1300,54 @@
             document.getElementById(`console-laag-${laagNummer}`).style.display = 'block'; checkConsoleLeeg();
             document.getElementById(`latLaag${laagNummer}`).innerText = centrum.lat.toFixed(5);
             document.getElementById(`lngLaag${laagNummer}`).innerText = centrum.lng.toFixed(5);
-            lagen[laagNummer].marker.on('drag', function(e) { let pos = e.target.getLatLng(); document.getElementById(`latLaag${laagNummer}`).innerText = pos.lat.toFixed(5); document.getElementById(`lngLaag${laagNummer}`).innerText = pos.lng.toFixed(5); });
+            
+            lagen[laagNummer].marker.on('drag', function(e) { 
+                let pos = e.target.getLatLng(); 
+                document.getElementById(`latLaag${laagNummer}`).innerText = pos.lat.toFixed(5); 
+                document.getElementById(`lngLaag${laagNummer}`).innerText = pos.lng.toFixed(5); 
+            });
+            
             lagen[laagNummer].schaal = 1.0; lagen[laagNummer].flipX = 1; lagen[laagNummer].flipY = 1;
-            document.getElementById(`transLaag${laagNummer}`).value = 1; document.getElementById(`schaalLaag${laagNummer}`).value = 1; document.getElementById(`rotLaag${laagNummer}`).value = 0;
-            updateLaagInputs(laagNummer);
+            document.getElementById(`transLaag${laagNummer}`).value = 1; 
+            document.getElementById(`schaalLaag${laagNummer}`).value = 1; 
+            document.getElementById(`rotLaag${laagNummer}`).value = 0;
+            updateLaagTransform(laagNummer);
         }
+
+        // --- NIEUW: LAAG 3 (LIVEFEED OP DE KAART PROJECTEREN) ---
+        window.projecteerLivefeed = function() {
+            if (!currentStream) { alert("Start eerst de live camera via het bedieningspaneel."); return; }
+            if (lagen[3].marker) window.wisLaag(3);
+            
+            // Creëer een video element binnen een div-icon
+            const iconHTML = `<div class="overlay-image-container"><video id="vid-laag-3" autoplay playsinline muted class="overlay-image" style="width: 400px;" onwheel="zoomLaagOpAfbeelding(event, 3)"></video></div>`;
+            const customIcon = L.divIcon({ html: iconHTML, className: '', iconSize: [400, "auto"], iconAnchor: [200, 100] });
+            let centrum = map.getCenter();
+            
+            lagen[3].marker = L.marker(centrum, { icon: customIcon, draggable: true, zIndexOffset: 300 }).addTo(map);
+            
+            // Koppel de live camera feed aan de zojuist aangemaakte video tag op de kaart
+            setTimeout(() => {
+                const vidEl = document.getElementById('vid-laag-3');
+                if(vidEl) vidEl.srcObject = currentStream;
+            }, 50);
+
+            document.getElementById(`console-laag-3`).style.display = 'block'; checkConsoleLeeg();
+            document.getElementById(`latLaag3`).innerText = centrum.lat.toFixed(5);
+            document.getElementById(`lngLaag3`).innerText = centrum.lng.toFixed(5);
+            
+            lagen[3].marker.on('drag', function(e) { 
+                let pos = e.target.getLatLng(); 
+                document.getElementById(`latLaag3`).innerText = pos.lat.toFixed(5); 
+                document.getElementById(`lngLaag3`).innerText = pos.lng.toFixed(5); 
+            });
+            
+            lagen[3].schaal = 1.0; lagen[3].flipX = 1; lagen[3].flipY = 1;
+            document.getElementById(`transLaag3`).value = 1; 
+            document.getElementById(`schaalLaag3`).value = 1; 
+            document.getElementById(`rotLaag3`).value = 0;
+            updateLaagTransform(3);
+        };
 
         window.uploadLaag = function(laagNummer, event) {
             const file = event.target.files[0]; if (!file) return;
@@ -1167,7 +1383,9 @@
 
         window.wisLaag = function(laagNummer) {
             if (lagen[laagNummer].marker) { map.removeLayer(lagen[laagNummer].marker); lagen[laagNummer].marker = null; }
-            document.getElementById(`boxLaag${laagNummer}`).checked = false; document.getElementById(`console-laag-${laagNummer}`).style.display = 'none'; checkConsoleLeeg();
+            document.getElementById(`boxLaag${laagNummer}`).checked = false; 
+            document.getElementById(`console-laag-${laagNummer}`).style.display = 'none'; 
+            checkConsoleLeeg();
         }
     </script>
 </body>
