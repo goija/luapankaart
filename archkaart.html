@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Gelaagde Engine & Console (V25 - Camera Wissel & Archeologie)</title>
+    <title>Gelaagde Engine & Console (V26 - Draggable Camera, Overlays & Mobiel UI)</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,20 +14,6 @@
     <style>
         body { margin: 0; display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1117; color: #c9d1d9; height: 100vh; overflow: hidden; }
         
-        /* Mobiele Menu Knop */
-        #mobiel-menu-knop { 
-            position: absolute; top: 15px; left: 15px; z-index: 100000; 
-            background: #e94560; color: white; border: none; padding: 10px 16px; 
-            font-size: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; 
-            display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace;
-        }
-
-        .sluit-menu-knop {
-            display: none; background: #da3633; color: white; border: none; 
-            width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;
-        }
-        .sluit-menu-knop:hover { background: #b32d2a; }
-
         /* Zijbalk Styling */
         #sidebar { width: 360px; background-color: #161b22; padding: 15px; box-sizing: border-box; overflow-y: auto; border-right: 1px solid #30363d; z-index: 1000; box-shadow: 2px 0 5px rgba(0,0,0,0.5); }
         h2 { font-size: 13px; text-transform: uppercase; color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 5px; margin-top: 15px; margin-bottom: 8px; }
@@ -74,20 +60,20 @@
         .baken-btn-grid button { background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; font-size: 10px; padding: 6px; border-radius: 4px; }
         .baken-btn-grid button:hover { background-color: #30363d; }
 
-        /* --- VERSCHUIFBARE CONSOLE --- */
-        #info-console {
-            position: absolute; right: 20px; top: 20px; width: 320px;
-            background: rgba(13, 17, 23, 0.95); border: 1px solid #30363d; border-radius: 6px;
-            z-index: 2000; box-shadow: 0 8px 25px rgba(0,0,0,0.9); color: #c9d1d9;
-            font-family: monospace; font-size: 11px; display: flex; flex-direction: column;
-            max-height: 90vh; backdrop-filter: blur(8px);
+        /* --- VERSCHUIFBARE CONSOLE & CAMERA --- */
+        .draggable-widget {
+            position: absolute; background: rgba(13, 17, 23, 0.95); border: 1px solid #30363d; border-radius: 6px;
+            z-index: 2000; box-shadow: 0 8px 25px rgba(0,0,0,0.9); color: #c9d1d9; font-family: monospace; font-size: 11px;
+            display: flex; flex-direction: column; backdrop-filter: blur(8px);
         }
-        #console-header {
-            background: #21262d; padding: 10px; border-bottom: 1px solid #30363d;
-            font-weight: bold; color: #58a6ff; cursor: grab; border-radius: 6px 6px 0 0; text-align: center;
-            font-size: 12px; text-transform: uppercase;
+        #info-console { right: 20px; top: 20px; width: 320px; max-height: 90vh; }
+        #camera-container { left: 50px; top: 50px; width: 340px; display: none; }
+
+        .widget-header {
+            background: #21262d; padding: 10px; border-bottom: 1px solid #30363d; font-weight: bold; color: #58a6ff; 
+            cursor: grab; border-radius: 6px 6px 0 0; text-align: center; font-size: 12px; text-transform: uppercase;
         }
-        #console-header:active { cursor: grabbing; }
+        .widget-header:active { cursor: grabbing; }
         #console-fixed { padding: 12px; border-bottom: 1px solid #30363d; background: rgba(22, 27, 34, 0.8); }
         #console-content { padding: 12px; overflow-y: auto; flex-grow: 1; }
         
@@ -100,41 +86,69 @@
         }
 
         /* --- MOBIELE RESPONSIVITEIT --- */
+        #mobiel-menu-knop { 
+            position: absolute; top: 15px; left: 15px; z-index: 100000; 
+            background: #e94560; color: white; border: none; padding: 10px 16px; 
+            font-size: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; 
+            display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace;
+        }
+        .sluit-menu-knop {
+            display: none; background: #da3633; color: white; border: none; 
+            width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;
+        }
+
         @media (max-width: 768px) {
-            #mobiel-menu-knop { display: block; }
+            #mobiel-menu-knop { display: block; top: auto; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; text-align: center; padding: 14px; font-size:16px;}
             .sluit-menu-knop { display: block; }
             #sidebar { 
-                position: absolute; left: -100%; width: 320px; max-width: 85vw; height: 100%; 
-                transition: left 0.3s ease; z-index: 100001; box-shadow: 5px 0 15px rgba(0,0,0,0.8);
+                position: absolute; left: 0; bottom: -100%; width: 100%; height: 75vh; max-width: 100%;
+                transition: bottom 0.3s ease; z-index: 100001; box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
+                border-right: none; border-top: 2px solid #30363d; border-radius: 12px 12px 0 0;
             }
-            #sidebar.actief { left: 0; }
-            #info-console { 
-                width: calc(100% - 30px); left: 15px; right: auto; top: 70px; 
-                max-height: calc(100vh - 90px); z-index: 99999; 
-            }
+            #sidebar.actief { bottom: 0; }
+            #info-console { width: calc(100% - 30px); left: 15px; right: auto; top: 15px; max-height: calc(100vh - 120px); z-index: 99999; }
+            #camera-container { width: calc(100% - 30px) !important; left: 15px !important; top: 15px !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Mobiele Menu Toggle -->
-    <button id="mobiel-menu-knop" onclick="document.getElementById('sidebar').classList.toggle('actief')">☰ MENU</button>
+    <!-- Mobiele Menu Toggle (Onderaan) -->
+    <button id="mobiel-menu-knop" onclick="document.getElementById('sidebar').classList.toggle('actief')">☰ GEREEDSCHAPPEN</button>
 
     <!-- Zijbalk -->
     <div id="sidebar">
         <button class="sluit-menu-knop" onclick="document.getElementById('sidebar').classList.remove('actief')">✕ Sluit Menu</button>
-        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V25</button>
+        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V26</button>
 
-        <h2>1. Wereld Draaien</h2>
+        <!-- ZOEKEN / GEOCODING & COÖRDINATEN -->
+        <h2>9. Zoeken, UTM & Schaal</h2>
         <div class="control-group">
-            <button onclick="zetRasterRotatie(180)">Reset naar 180°</button>
-            <input type="range" min="1" max="360" step="1" value="180" id="gridRotatieSlider" oninput="zetRasterRotatie(this.value)">
-        </div>
+            <label style="color:#8b949e; margin-bottom:2px;">Zet Kaartschaal (±):</label>
+            <div class="flex-row">
+                <button class="btn-orange" onclick="zetSchaal(50000)">1:50k</button>
+                <button class="btn-orange" onclick="zetSchaal(25000)">1:25k</button>
+                <button class="btn-orange" onclick="zetSchaal(10000)">1:10k</button>
+                <button class="btn-orange" onclick="zetSchaal(1000)">1:1.000</button>
+            </div>
+            <div class="flex-row" style="margin-bottom:8px;">
+                <button class="btn-orange" onclick="zetSchaal(400)">1:400</button>
+                <button class="btn-orange" onclick="zetSchaal(200)">1:200</button>
+                <button class="btn-orange" onclick="zetSchaal(50)">1:50</button>
+                <button class="btn-orange" onclick="zetSchaal(10)">1:10</button>
+            </div>
 
-        <h2>2. Data & Tekenen</h2>
-        <div class="control-group">
-            <label>Hex-Raster Zichtbaar <input type="checkbox" id="gridToggleCheckbox" checked onchange="toggleHexRaster(this.checked)"></label>
-            <label>Symmetrie Zoom Raster: <input type="range" min="0.1" max="5" step="0.1" value="1" oninput="zetSymmetrieSchaal(this.value)"></label>
+            <label style="color:#8b949e; margin-top:8px; margin-bottom:2px;">Zoek op naam (bijv. Parijs):</label>
+            <div class="flex-row">
+                <input type="text" id="zoek-plaats-input" placeholder="Plaatsnaam..." style="flex:2;">
+                <button class="btn-green" onclick="zoekPlaats()" style="flex:1;">🔍 Zoek</button>
+            </div>
+            
+            <label style="color:#8b949e; margin-top:8px; margin-bottom:2px;">Of Coördinaten (Decimaal / Wikipedia):</label>
+            <div class="flex-row">
+                <input type="text" id="zoek-coord-input" placeholder="48° 6′ NB, 09° 25′ OL" style="flex:2;">
+                <button class="btn-blue" onclick="zoekCoordinaten()" style="flex:1;">📍 Plaats</button>
+            </div>
         </div>
 
         <h2>3. Vrije Markers (Bovenop Lagen)</h2>
@@ -154,15 +168,26 @@
             <button class="btn-blue" style="margin-top:5px;" onclick="plaatsVrijeMarker()">+ Plaats Marker in Centrum</button>
         </div>
 
+        <h2>1. Wereld Draaien</h2>
+        <div class="control-group">
+            <button onclick="zetRasterRotatie(180)">Reset naar 180°</button>
+            <input type="range" min="1" max="360" step="1" value="180" id="gridRotatieSlider" oninput="zetRasterRotatie(this.value)">
+        </div>
+
+        <h2>2. Data & Tekenen (Grid)</h2>
+        <div class="control-group">
+            <label>Hex-Raster Zichtbaar <input type="checkbox" id="gridToggleCheckbox" checked onchange="toggleHexRaster(this.checked)"></label>
+            <label>Symmetrie Zoom Raster: <input type="range" min="0.1" max="5" step="0.1" value="1" oninput="zetSymmetrieSchaal(this.value)"></label>
+        </div>
+
         <!-- WEBRTC & HARDWARE SENSOREN -->
         <h2>10. Hardware Sensoren & WebRTC</h2>
         <div class="control-group">
-            <label style="color:#8b949e; margin-bottom:2px;">Live Camera (Landschap / Voorzijde):</label>
+            <label style="color:#8b949e; margin-bottom:2px;">Live Camera (Zwevend Venster):</label>
             <div class="flex-row">
                 <button class="btn-blue" onclick="startCamera()">📷 Start Camera</button>
                 <button class="btn-orange" onclick="wisselCamera()">🔄 Wissel (Achter/Voor)</button>
             </div>
-            <video id="webrtc-video" autoplay playsinline style="width: 100%; border-radius: 4px; margin-top: 5px; display: none; border: 1px solid #30363d; background: #010409;"></video>
             
             <label style="color:#8b949e; margin-top:10px; margin-bottom:2px;">Hardware API (Telescoop / RWS Sensoren):</label>
             <select id="hardware-type" style="margin-bottom: 4px;">
@@ -174,23 +199,36 @@
             <div id="hardware-output" style="background:#010409; color:#10b981; font-family:monospace; font-size:10px; padding:6px; height:80px; overflow-y:auto; margin-top:5px; border:1px solid #30363d; display:none;">
                 Wachtend op COM/USB verbinding...
             </div>
+        </div>
 
-            <label style="color:#8b949e; margin-top:10px; margin-bottom:2px;">P2P Data Channel (Zend Sensordata):</label>
+        <!-- Lagen Management met Snapshot -->
+        <h2>4. BASIS BITMAP OVERLAY (LAAG 1)</h2>
+        <div class="control-group">
+            <input type="file" id="fileLaag1" accept=".jpg, .png" onchange="uploadLaag(1, event)" style="display:none;">
             <div class="flex-row">
-                <button class="btn-green" onclick="genereerP2POffer()">📡 P2P Host</button>
-                <button class="btn-green" onclick="genereerP2PAnswer()">🛰️ P2P Join</button>
+                <button class="btn-red" onclick="document.getElementById('fileLaag1').click()">Upload 1</button>
+                <button class="btn-orange" onclick="maakFotoVoorLaag(1)">📷 Snapshot</button>
+            </div>
+            <div class="flex-row">
+                <label style="background-color:#21262d; border:1px solid #30363d; padding:6px; border-radius:4px;">
+                    <input type="checkbox" id="boxLaag1" onchange="toggleBox(1, this.checked)"> Box 1
+                </label>
+                <button class="btn-red" onclick="wisLaag(1)">Wis 1</button>
             </div>
         </div>
 
-        <!-- DATA I/O (IMPORTEER & EXPORTEER) -->
-        <h2>6. Data I/O (Importeer & Exporteer)</h2>
+        <h2>5. GEREEDSCHAP OVERLAY (LAAG 2)</h2>
         <div class="control-group">
-            <input type="file" id="data-import" accept=".json,.geojson,.bin" onchange="importeerData(event)" style="display:none;">
-            <button class="btn-blue" style="margin-bottom: 5px; width: 100%; padding: 8px;" onclick="document.getElementById('data-import').click()">📁 Importeer Data</button>
+            <input type="file" id="fileLaag2" accept=".jpg, .png" onchange="uploadLaag(2, event)" style="display:none;">
             <div class="flex-row">
-                <button class="btn-green" onclick="exporteerData('json')">💾 JSON</button>
-                <button class="btn-green" onclick="exporteerData('geojson')">💾 GeoJSON</button>
-                <button class="btn-green" onclick="exporteerData('bin')">💾 Binair</button>
+                <button class="btn-red" onclick="document.getElementById('fileLaag2').click()">Upload 2</button>
+                <button class="btn-orange" onclick="maakFotoVoorLaag(2)">📷 Snapshot</button>
+            </div>
+            <div class="flex-row">
+                <label style="background-color:#21262d; border:1px solid #30363d; padding:6px; border-radius:4px;">
+                    <input type="checkbox" id="boxLaag2" onchange="toggleBox(2, this.checked)"> Box 2
+                </label>
+                <button class="btn-red" onclick="wisLaag(2)">Wis 2</button>
             </div>
         </div>
 
@@ -258,58 +296,15 @@
             <button class="btn-green" style="width:100%" onclick="laadErfgoedPreset()">📍 Laad Erfgoed Preset</button>
         </div>
 
-        <!-- ZOEKEN / GEOCODING & COÖRDINATEN -->
-        <h2>9. Zoeken, UTM & Schaal</h2>
+        <!-- DATA I/O (IMPORTEER & EXPORTEER) -->
+        <h2>6. Data I/O (Importeer & Exporteer)</h2>
         <div class="control-group">
-            <label style="color:#8b949e; margin-bottom:2px;">Zet Kaartschaal (±):</label>
+            <input type="file" id="data-import" accept=".json,.geojson,.bin" onchange="importeerData(event)" style="display:none;">
+            <button class="btn-blue" style="margin-bottom: 5px; width: 100%; padding: 8px;" onclick="document.getElementById('data-import').click()">📁 Importeer Data</button>
             <div class="flex-row">
-                <button class="btn-orange" onclick="zetSchaal(50000)">1:50k</button>
-                <button class="btn-orange" onclick="zetSchaal(25000)">1:25k</button>
-                <button class="btn-orange" onclick="zetSchaal(10000)">1:10k</button>
-                <button class="btn-orange" onclick="zetSchaal(1000)">1:1.000</button>
-            </div>
-            <div class="flex-row" style="margin-bottom:8px;">
-                <button class="btn-orange" onclick="zetSchaal(400)">1:400</button>
-                <button class="btn-orange" onclick="zetSchaal(200)">1:200</button>
-                <button class="btn-orange" onclick="zetSchaal(50)">1:50</button>
-                <button class="btn-orange" onclick="zetSchaal(10)">1:10</button>
-            </div>
-
-            <label style="color:#8b949e; margin-top:8px; margin-bottom:2px;">Zoek op naam (bijv. Parijs):</label>
-            <div class="flex-row">
-                <input type="text" id="zoek-plaats-input" placeholder="Plaatsnaam..." style="flex:2;">
-                <button class="btn-green" onclick="zoekPlaats()" style="flex:1;">🔍 Zoek</button>
-            </div>
-            
-            <label style="color:#8b949e; margin-top:8px; margin-bottom:2px;">Of Coördinaten (Decimaal / Wikipedia):</label>
-            <div class="flex-row">
-                <input type="text" id="zoek-coord-input" placeholder="48° 6′ NB, 09° 25′ OL" style="flex:2;">
-                <button class="btn-blue" onclick="zoekCoordinaten()" style="flex:1;">📍 Plaats</button>
-            </div>
-        </div>
-
-        <!-- Lagen Management -->
-        <h2>4. BASIS BITMAP OVERLAY (LAAG 1)</h2>
-        <div class="control-group">
-            <input type="file" id="fileLaag1" accept=".jpg, .png" onchange="uploadLaag(1, event)" style="display:none;">
-            <div class="flex-row">
-                <button class="btn-red" onclick="document.getElementById('fileLaag1').click()">Upload 1</button>
-                <label style="background-color:#21262d; border:1px solid #30363d; padding:6px; border-radius:4px;">
-                    <input type="checkbox" id="boxLaag1" onchange="toggleBox(1, this.checked)"> Box 1
-                </label>
-                <button class="btn-red" onclick="wisLaag(1)">Wis 1</button>
-            </div>
-        </div>
-
-        <h2>5. GEREEDSCHAP OVERLAY (LAAG 2)</h2>
-        <div class="control-group">
-            <input type="file" id="fileLaag2" accept=".jpg, .png" onchange="uploadLaag(2, event)" style="display:none;">
-            <div class="flex-row">
-                <button class="btn-red" onclick="document.getElementById('fileLaag2').click()">Upload 2</button>
-                <label style="background-color:#21262d; border:1px solid #30363d; padding:6px; border-radius:4px;">
-                    <input type="checkbox" id="boxLaag2" onchange="toggleBox(2, this.checked)"> Box 2
-                </label>
-                <button class="btn-red" onclick="wisLaag(2)">Wis 2</button>
+                <button class="btn-green" onclick="exporteerData('json')">💾 JSON</button>
+                <button class="btn-green" onclick="exporteerData('geojson')">💾 GeoJSON</button>
+                <button class="btn-green" onclick="exporteerData('bin')">💾 Binair</button>
             </div>
         </div>
     </div>
@@ -318,9 +313,22 @@
     <div id="map-wrapper">
         <div id="map"></div>
         
+        <!-- Zwevend Camera Venster -->
+        <div id="camera-container" class="draggable-widget">
+            <div id="camera-header" class="widget-header">📷 Live Camera (Sleepbaar)</div>
+            <div style="background:#010409; position:relative;">
+                <video id="webrtc-video" autoplay playsinline style="width: 100%; display: block;"></video>
+            </div>
+            <div style="padding:6px; display:flex; gap:4px; background:#161b22; border-radius:0 0 6px 6px;">
+                <button class="btn-green" onclick="neemFoto()">📸 Sla Foto Op</button>
+                <button class="btn-red" id="btn-opname" onclick="toggleOpname()">⏺ Opnemen</button>
+                <button class="btn-blue" onclick="sluitCamera()">✕ Sluit</button>
+            </div>
+        </div>
+
         <!-- Verschuifbare Console met Controls -->
-        <div id="info-console">
-            <div id="console-header">Systeem Tool / Console</div>
+        <div id="info-console" class="draggable-widget">
+            <div id="console-header" class="widget-header">Systeem Tool / Console</div>
             
             <div id="console-fixed">
                 <strong style="color: #58a6ff; font-size: 11px;">KAART ACHTERGROND</strong>
@@ -397,29 +405,47 @@
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
     <script>
-        // --- DRAG LOGICA VOOR CONSOLE ---
-        dragElement(document.getElementById("info-console"));
-        function dragElement(elmnt) {
+        // --- DRAG LOGICA VOOR WIDGETS (Werkt voor muis en touch) ---
+        function makeDraggable(elmnt, headerEl) {
             var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            document.getElementById("console-header").onmousedown = dragMouseDown;
+            headerEl.onmousedown = dragMouseDown;
+            headerEl.ontouchstart = dragTouchStart;
+
             function dragMouseDown(e) {
                 e = e || window.event; e.preventDefault();
                 pos3 = e.clientX; pos4 = e.clientY;
                 document.onmouseup = closeDragElement;
                 document.onmousemove = elementDrag;
             }
+            function dragTouchStart(e) {
+                pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementTouchDrag;
+            }
             function elementDrag(e) {
                 e = e || window.event; e.preventDefault();
                 pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
                 pos3 = e.clientX; pos4 = e.clientY;
+                updatePos();
+            }
+            function elementTouchDrag(e) {
+                pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY;
+                pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+                updatePos();
+            }
+            function updatePos() {
                 elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-                elmnt.style.right = 'auto';
+                elmnt.style.right = 'auto'; elmnt.style.bottom = 'auto';
             }
             function closeDragElement() {
                 document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
             }
         }
+        
+        makeDraggable(document.getElementById("info-console"), document.getElementById("console-header"));
+        makeDraggable(document.getElementById("camera-container"), document.getElementById("camera-header"));
 
         // --- 1. KAART & ACHTERGROND INITIALISATIE ---
         const map = L.map('map', { center: [52.267, 5.250], zoom: 12, zoomSnap: 0.1, maxZoom: 28, attributionControl: false, zoomControl: false });
@@ -456,49 +482,96 @@
             else if (keuze === 'color-white') { mapDiv.style.backgroundColor = '#ffffff'; }
         };
 
-        // --- 10. WEBRTC CAMERA & WEB SERIAL API ---
+        // --- 10. WEBRTC CAMERA (MET OPNAME/FOTO) & WEB SERIAL API ---
         let currentStream = null;
-        let useFrontCamera = false; // Standaard achterkant voor landschappen
+        let useFrontCamera = false;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
 
         window.startCamera = async function() {
             const videoElement = document.getElementById('webrtc-video');
+            const camContainer = document.getElementById('camera-container');
             
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
 
-            const constraints = {
-                video: {
-                    facingMode: useFrontCamera ? "user" : "environment"
-                },
-                audio: false
-            };
+            const constraints = { video: { facingMode: useFrontCamera ? "user" : "environment" }, audio: false };
 
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElement.style.display = 'block';
+                camContainer.style.display = 'flex';
                 videoElement.srcObject = currentStream;
             } catch (err) {
-                console.error("Camera fout: ", err);
-                // Fallback als specifieke facingMode niet wordt ondersteund
                 try {
                     currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    videoElement.style.display = 'block';
+                    camContainer.style.display = 'flex';
                     videoElement.srcObject = currentStream;
                 } catch (fallbackErr) {
-                    alert("Kan camera niet benaderen. Controleer permissies of zorg dat de applicatie via HTTPS/localhost draait.");
+                    alert("Kan camera niet benaderen. Controleer permissies of gebruik HTTPS/localhost.");
                 }
             }
         }
 
+        window.sluitCamera = function() {
+            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+            document.getElementById('camera-container').style.display = 'none';
+        }
+
         window.wisselCamera = function() {
             useFrontCamera = !useFrontCamera;
-            const videoElement = document.getElementById('webrtc-video');
-            if (videoElement.style.display === 'block') {
-                startCamera();
+            const camContainer = document.getElementById('camera-container');
+            if (camContainer.style.display !== 'none') { startCamera(); } else { alert("Start eerst de camera."); }
+        }
+
+        window.neemFoto = function() {
+            const video = document.getElementById('webrtc-video');
+            if(!currentStream) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl; a.download = `foto_veldwerk_${Date.now()}.png`; a.click();
+        }
+
+        window.toggleOpname = function() {
+            const btn = document.getElementById('btn-opname');
+            if (!currentStream) return;
+            
+            if (!isRecording) {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(currentStream);
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `opname_veldwerk_${Date.now()}.webm`; a.click();
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                btn.innerText = '⏹ Stop'; btn.style.backgroundColor = '#e94560';
             } else {
-                alert("Start eerst de camera voordat u wisselt.");
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.innerText = '⏺ Opnemen'; btn.style.backgroundColor = '#da3633';
             }
+        }
+
+        window.maakFotoVoorLaag = function(laagNummer) {
+            const video = document.getElementById('webrtc-video');
+            const camContainer = document.getElementById('camera-container');
+            if (!currentStream || camContainer.style.display === 'none') {
+                alert("Start eerst de live camera om een snapshot voor een laag te maken.");
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            laadAfbeeldingInLaag(laagNummer, dataUrl);
         }
 
         window.connectHardwareSerial = async function() {
@@ -520,13 +593,9 @@
                 }
             } catch (error) {
                 console.error("Web Serial Fout:", error);
-                alert("Fout bij openen poort. Zorg dat uw browser 'Web Serial API' ondersteunt en het apparaat is aangesloten.");
+                alert("Fout bij openen poort. Zorg dat uw browser 'Web Serial API' ondersteunt.");
             }
         }
-
-        window.genereerP2POffer = function() { alert("P2P Host Data Channel framework is geladen.\n(Koppeling vereist actieve signaleringsserver.)"); }
-        window.genereerP2PAnswer = function() { alert("P2P Join Data Channel framework is geladen.\n(Verwacht SDP Answer-object van de zender.)"); }
-
 
         // --- 2. HEX RASTER LOGICA (DYNAMISCH BEELDVULLEND) ---
         let hexLayer;
@@ -542,10 +611,8 @@
             const w = bounds.getEast() - bounds.getWest();
             const h = bounds.getNorth() - bounds.getSouth();
             
-            let minLng = bounds.getWest() - w * 0.75;
-            let minLat = bounds.getSouth() - h * 0.75;
-            let maxLng = bounds.getEast() + w * 0.75;
-            let maxLat = bounds.getNorth() + h * 0.75;
+            let minLng = bounds.getWest() - w * 0.75; let minLat = bounds.getSouth() - h * 0.75;
+            let maxLng = bounds.getEast() + w * 0.75; let maxLat = bounds.getNorth() + h * 0.75;
 
             let basisKm = 2 * Math.pow(2, 12 - Math.min(20, map.getZoom()));
             let actueleRadius = Math.max(0.0001, basisKm * symmetrieSchaal);
@@ -560,21 +627,14 @@
             try {
                 const basisRaster = turf.hexGrid(bbox, actueleRadius, { units: 'kilometers' });
                 turf.transformRotate(basisRaster, rasterRotatie, { pivot: turf.point([5.250, 52.267]), mutate: true });
-                hexLayer = L.geoJSON(basisRaster, { 
-                    style: { color: "#1f6feb", weight: 1, fillOpacity: 0, opacity: 0.4 },
-                    interactive: false
-                }).addTo(map);
+                hexLayer = L.geoJSON(basisRaster, { style: { color: "#1f6feb", weight: 1, fillOpacity: 0, opacity: 0.4 }, interactive: false }).addTo(map);
             } catch(e) {}
         }
         map.on('moveend', tekenHexRaster);
         setTimeout(tekenHexRaster, 200);
 
-        window.zetRasterRotatie = function(waarde) {
-            rasterRotatie = parseFloat(waarde); document.getElementById('gridRotatieSlider').value = rasterRotatie; tekenHexRaster();
-        }
-        window.toggleHexRaster = function(zichtbaar) { 
-            if (zichtbaar) { tekenHexRaster(); } else { if (hexLayer) map.removeLayer(hexLayer); }
-        }
+        window.zetRasterRotatie = function(waarde) { rasterRotatie = parseFloat(waarde); document.getElementById('gridRotatieSlider').value = rasterRotatie; tekenHexRaster(); }
+        window.toggleHexRaster = function(zichtbaar) { if (zichtbaar) { tekenHexRaster(); } else { if (hexLayer) map.removeLayer(hexLayer); } }
         window.zetSymmetrieSchaal = function(waarde) { symmetrieSchaal = parseFloat(waarde); tekenHexRaster(); }
 
         // --- 3. VRIJE BAKENS ---
@@ -696,7 +756,7 @@
                 bouwBakenMarkerData('dog2', 53.5, 3.0, 'Zuidelijke Dogger', '#e3b341', 'vierkant');
             } else if (preset === 'nehalennia') {
                 map.setView([51.6, 3.7], 11);
-                bouwBakenMarkerData('neh1', 51.616, 3.933, 'Tempel Colijnsplaat (Oosterschelde)', '#e3b341', 'vierkant');
+                bouwBakenMarkerData('neh1', 51.616, 3.933, 'Tempel Colijnsplaat', '#e3b341', 'vierkant');
                 bouwBakenMarkerData('neh2', 51.566, 3.483, 'Tempel Domburg', '#e3b341', 'vierkant');
             } else if (preset === 'alle_steencirkels') {
                 map.setView([54.0, -3.0], 6);
@@ -1058,10 +1118,8 @@
             updateLaagTransform(laagNummer);
         }
 
-        window.uploadLaag = function(laagNummer, event) {
-            const file = event.target.files[0]; if (!file) return;
+        function laadAfbeeldingInLaag(laagNummer, imgUrl) {
             if (lagen[laagNummer].marker) wisLaag(laagNummer);
-            const imgUrl = URL.createObjectURL(file);
             const iconHTML = `<div class="overlay-image-container"><img id="${lagen[laagNummer].id}" src="${imgUrl}" class="overlay-image" style="width: 400px;" onwheel="zoomLaagOpAfbeelding(event, ${laagNummer})"></div>`;
             const customIcon = L.divIcon({ html: iconHTML, className: '', iconSize: [400, "auto"], iconAnchor: [200, 100] });
             let centrum = map.getCenter();
@@ -1072,7 +1130,14 @@
             lagen[laagNummer].marker.on('drag', function(e) { let pos = e.target.getLatLng(); document.getElementById(`latLaag${laagNummer}`).innerText = pos.lat.toFixed(5); document.getElementById(`lngLaag${laagNummer}`).innerText = pos.lng.toFixed(5); });
             lagen[laagNummer].schaal = 1.0; lagen[laagNummer].flipX = 1; lagen[laagNummer].flipY = 1;
             document.getElementById(`transLaag${laagNummer}`).value = 1; document.getElementById(`schaalLaag${laagNummer}`).value = 1; document.getElementById(`rotLaag${laagNummer}`).value = 0;
-            updateLaagInputs(laagNummer); event.target.value = ''; 
+            updateLaagInputs(laagNummer);
+        }
+
+        window.uploadLaag = function(laagNummer, event) {
+            const file = event.target.files[0]; if (!file) return;
+            const imgUrl = URL.createObjectURL(file);
+            laadAfbeeldingInLaag(laagNummer, imgUrl);
+            event.target.value = ''; 
         }
 
         window.updateLaagInputs = function(laagNummer) {
