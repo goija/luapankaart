@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Gelaagde Engine & Console (V24 - Archeologie Europa)</title>
+    <title>Gelaagde Engine & Console (V25 - Camera Wissel & Archeologie)</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -123,7 +123,7 @@
     <!-- Zijbalk -->
     <div id="sidebar">
         <button class="sluit-menu-knop" onclick="document.getElementById('sidebar').classList.remove('actief')">✕ Sluit Menu</button>
-        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V24</button>
+        <button class="btn-blue" style="width:100%; font-weight:bold; font-size:13px; margin-bottom: 10px; background-color:#0366d6;">Geïntegreerde Engine V25</button>
 
         <h2>1. Wereld Draaien</h2>
         <div class="control-group">
@@ -157,8 +157,11 @@
         <!-- WEBRTC & HARDWARE SENSOREN -->
         <h2>10. Hardware Sensoren & WebRTC</h2>
         <div class="control-group">
-            <label style="color:#8b949e; margin-bottom:2px;">Live Camera (WebRTC):</label>
-            <button class="btn-blue" onclick="startCamera()">📷 Start Lokale Camera</button>
+            <label style="color:#8b949e; margin-bottom:2px;">Live Camera (Landschap / Voorzijde):</label>
+            <div class="flex-row">
+                <button class="btn-blue" onclick="startCamera()">📷 Start Camera</button>
+                <button class="btn-orange" onclick="wisselCamera()">🔄 Wissel (Achter/Voor)</button>
+            </div>
             <video id="webrtc-video" autoplay playsinline style="width: 100%; border-radius: 4px; margin-top: 5px; display: none; border: 1px solid #30363d; background: #010409;"></video>
             
             <label style="color:#8b949e; margin-top:10px; margin-bottom:2px;">Hardware API (Telescoop / RWS Sensoren):</label>
@@ -222,43 +225,34 @@
         <div class="control-group">
             <button class="btn-orange" style="margin-bottom:6px; width:100%" onclick="genereerOpgravingsMatrix()">+ Plaats 3x3 Opgravingsraster (Matrix)</button>
             <select id="erfgoed-preset" style="margin-bottom:6px;">
-                <optgroup label="Opgravingen Zweden">
-                    <option value="birka">Birka (Vikingnederzetting)</option>
-                    <option value="gamlauppsala">Gamla Uppsala (Heiligdom/Graven)</option>
-                    <option value="alesstenar">Ales Stenar (Megalithisch Heiligdom)</option>
-                </optgroup>
-                <optgroup label="Opgravingen Nederland">
-                    <option value="reimerswaal">Verdronken Land v. Reimerswaal</option>
-                    <option value="schokland">Werelderfgoed Schokland</option>
-                    <option value="nehalennia">Nehalennia-tempels (Zeeland)</option>
-                    <option value="dorestad">Dorestad (Vroege Middeleeuwen)</option>
-                    <option value="hunebed_d27">Hunebed D27 Borger</option>
-                    <option value="nijmegen_castra">Castra Nijmegen (Romeins)</option>
-                </optgroup>
-                <optgroup label="Opgravingen Duitsland">
-                    <option value="heuneburg">Heuneburg Keltische Stad</option>
-                    <option value="kalkriese">Kalkriese (Varusslag)</option>
-                    <option value="externsteine">Externsteine (Heiligdom)</option>
-                    <option value="xanten">Colonia Ulpia Traiana (Xanten)</option>
-                </optgroup>
-                <optgroup label="Opgravingen Engeland">
-                    <option value="stonehenge">Stonehenge</option>
-                    <option value="avebury">Avebury Steencirkel</option>
-                    <option value="suttonhoo">Sutton Hoo (Scheepsgraf)</option>
-                    <option value="vindolanda">Vindolanda (Romeins Fort)</option>
-                </optgroup>
-                <optgroup label="Opgravingen Frankrijk">
-                    <option value="carnac">Carnac Alignements</option>
-                    <option value="alesia">Alesia (Gallisch Oppidum)</option>
-                    <option value="bibracte">Bibracte (Mont Beuvray)</option>
-                </optgroup>
-                <optgroup label="Overige / Globaal">
+                <optgroup label="Verdronken Gebieden & Zee">
                     <option value="doggerland">Doggersland (Noordzee)</option>
+                    <option value="nehalennia">Nehalennia-tempels (Zeeland)</option>
+                    <option value="reimerswaal">Verdronken Land v. Reimerswaal (NL)</option>
+                    <option value="schokland">Werelderfgoed Schokland (NL)</option>
+                </optgroup>
+                <optgroup label="Historische Opgravingen">
                     <option value="pompeii">Archeologisch Pompeï (IT)</option>
                     <option value="troje">Opgraving Troje (TR)</option>
                     <option value="palmyra">Ruïnes van Palmyra (SY)</option>
                     <option value="aleppo">Citadel van Aleppo (SY)</option>
+                </optgroup>
+                <optgroup label="Steencirkels & Megalieten">
+                    <option value="stonehenge">Stonehenge (UK)</option>
+                    <option value="avebury">Avebury Steencirkel (UK)</option>
+                    <option value="callanish">Callanish Stones (UK)</option>
+                    <option value="brodgar">Ring of Brodgar (UK)</option>
+                    <option value="carnac">Carnac Megalieten (FR)</option>
                     <option value="alle_steencirkels">Toon Alle Bekende Steencirkels</option>
+                </optgroup>
+                <optgroup label="Overige Archeologie">
+                    <option value="heuneburg">Heuneburg Keltische Stad (DE)</option>
+                    <option value="mohenjo">Mohenjo-Daro (PK)</option>
+                    <option value="knossos">Paleis van Knossos (GR)</option>
+                    <option value="delphi">Orakel van Delphi (GR)</option>
+                    <option value="gobekli">Göbekli Tepe (TR)</option>
+                    <option value="vallei">Vallei der Koningen (EG)</option>
+                    <option value="gizeh">Necropolis van Gizeh (EG)</option>
                 </optgroup>
             </select>
             <button class="btn-green" style="width:100%" onclick="laadErfgoedPreset()">📍 Laad Erfgoed Preset</button>
@@ -463,15 +457,47 @@
         };
 
         // --- 10. WEBRTC CAMERA & WEB SERIAL API ---
+        let currentStream = null;
+        let useFrontCamera = false; // Standaard achterkant voor landschappen
+
         window.startCamera = async function() {
             const videoElement = document.getElementById('webrtc-video');
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: useFrontCamera ? "user" : "environment"
+                },
+                audio: false
+            };
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoElement.style.display = 'block';
-                videoElement.srcObject = stream;
+                videoElement.srcObject = currentStream;
             } catch (err) {
                 console.error("Camera fout: ", err);
-                alert("Kan camera niet benaderen. Controleer permissies of zorg dat de applicatie via HTTPS/localhost draait.");
+                // Fallback als specifieke facingMode niet wordt ondersteund
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    videoElement.style.display = 'block';
+                    videoElement.srcObject = currentStream;
+                } catch (fallbackErr) {
+                    alert("Kan camera niet benaderen. Controleer permissies of zorg dat de applicatie via HTTPS/localhost draait.");
+                }
+            }
+        }
+
+        window.wisselCamera = function() {
+            useFrontCamera = !useFrontCamera;
+            const videoElement = document.getElementById('webrtc-video');
+            if (videoElement.style.display === 'block') {
+                startCamera();
+            } else {
+                alert("Start eerst de camera voordat u wisselt.");
             }
         }
 
@@ -611,20 +637,7 @@
             const preset = document.getElementById('erfgoed-preset').value;
             wisAlleVrijeMarkers();
             
-            // Zweden
-            if (preset === 'birka') {
-                map.setView([59.332, 17.545], 14);
-                bouwBakenMarkerData('z_bir1', 59.332, 17.545, 'Birka Vikingnederzetting', '#da3633', 'cirkel');
-            } else if (preset === 'gamlauppsala') {
-                map.setView([59.897, 17.633], 15);
-                bouwBakenMarkerData('z_gam1', 59.897, 17.633, 'Gamla Uppsala Heiligdom', '#e3b341', 'vierkant');
-                bouwBakenMarkerData('z_gam2', 59.898, 17.629, 'Koningsgraven', '#da3633', 'driehoek');
-            } else if (preset === 'alesstenar') {
-                map.setView([55.382, 14.053], 16);
-                bouwBakenMarkerData('z_ale1', 55.382, 14.053, 'Ales Stenar (Scheepszetting)', '#388bfd', 'cirkel');
-
-            // Nederland
-            } else if (preset === 'reimerswaal') {
+            if (preset === 'reimerswaal') {
                 map.setView([51.503, 4.172], 13);
                 bouwBakenMarkerData('r1', 51.506, 4.170, 'Reimerswaal Centrum', '#da3633', 'cirkel');
                 bouwBakenMarkerData('r2', 51.501, 4.180, 'Oostelijke Stadswal', '#e3b341', 'vierkant');
@@ -634,71 +647,57 @@
                 bouwBakenMarkerData('s1', 52.635, 5.775, 'Oud Emmeloord (Noord)', '#da3633', 'cirkel');
                 bouwBakenMarkerData('s2', 52.630, 5.780, 'Middelbuurt (Centrum)', '#e3b341', 'vierkant');
                 bouwBakenMarkerData('s3', 52.624, 5.783, 'Zuidert', '#388bfd', 'driehoek');
-            } else if (preset === 'nehalennia') {
-                map.setView([51.6, 3.7], 11);
-                bouwBakenMarkerData('neh1', 51.616, 3.933, 'Tempel Colijnsplaat (Oosterschelde)', '#e3b341', 'vierkant');
-                bouwBakenMarkerData('neh2', 51.566, 3.483, 'Tempel Domburg', '#e3b341', 'vierkant');
-            } else if (preset === 'dorestad') {
-                map.setView([51.968, 5.342], 14);
-                bouwBakenMarkerData('nl_dor1', 51.968, 5.342, 'Dorestad (Handelsnederzetting)', '#da3633', 'cirkel');
-            } else if (preset === 'hunebed_d27') {
-                map.setView([52.922, 6.797], 16);
-                bouwBakenMarkerData('nl_hun1', 52.922, 6.797, 'Hunebed D27 Borger', '#388bfd', 'vierkant');
-            } else if (preset === 'nijmegen_castra') {
-                map.setView([51.836, 5.873], 15);
-                bouwBakenMarkerData('nl_nij1', 51.836, 5.873, 'Castra op de Hunerberg', '#da3633', 'vierkant');
-
-            // Duitsland
+            } else if (preset === 'pompeii') {
+                map.setView([40.751, 14.487], 15);
+                bouwBakenMarkerData('p1', 40.749, 14.484, 'Forum (Pompeï)', '#da3633', 'vierkant');
+                bouwBakenMarkerData('p2', 40.751, 14.491, 'Amfitheater', '#e3b341', 'cirkel');
             } else if (preset === 'heuneburg') {
                 map.setView([48.100, 9.416], 15);
                 bouwBakenMarkerData('h1', 48.100, 9.416, 'Heuneburg Heuvelfort', '#da3633', 'vierkant');
-            } else if (preset === 'kalkriese') {
-                map.setView([52.408, 8.130], 14);
-                bouwBakenMarkerData('de_kal1', 52.408, 8.130, 'Opgraving Kalkriese (Varusslag)', '#da3633', 'driehoek');
-            } else if (preset === 'externsteine') {
-                map.setView([51.868, 8.917], 16);
-                bouwBakenMarkerData('de_ext1', 51.868, 8.917, 'Externsteine Heiligdom', '#e3b341', 'cirkel');
-            } else if (preset === 'xanten') {
-                map.setView([51.666, 6.444], 14);
-                bouwBakenMarkerData('de_xan1', 51.666, 6.444, 'Colonia Ulpia Traiana (Xanten)', '#388bfd', 'vierkant');
-
-            // Engeland
+            } else if (preset === 'troje') {
+                map.setView([39.9575, 26.2389], 15);
+                bouwBakenMarkerData('t1', 39.9575, 26.2389, 'Opgraving Troje', '#da3633', 'cirkel');
+            } else if (preset === 'gobekli') {
+                map.setView([37.2232, 38.9224], 16);
+                bouwBakenMarkerData('g1', 37.2232, 38.9224, 'Heiligdom Göbekli Tepe', '#e3b341', 'cirkel');
+            } else if (preset === 'knossos') {
+                map.setView([35.2979, 25.1632], 16);
+                bouwBakenMarkerData('k1', 35.2979, 25.1632, 'Paleis van Knossos', '#388bfd', 'vierkant');
+            } else if (preset === 'delphi') {
+                map.setView([38.4824, 22.5010], 16);
+                bouwBakenMarkerData('d1', 38.4824, 22.5010, 'Orakel van Delphi', '#2ea043', 'driehoek');
+            } else if (preset === 'vallei') {
+                map.setView([25.7402, 32.6014], 15);
+                bouwBakenMarkerData('v1', 25.7402, 32.6014, 'Necropool: Vallei der Koningen', '#da3633', 'driehoek');
+            } else if (preset === 'gizeh') {
+                map.setView([29.9792, 31.1342], 15);
+                bouwBakenMarkerData('giz1', 29.9792, 31.1342, 'Necropolis van Gizeh', '#e3b341', 'vierkant');
+            } else if (preset === 'mohenjo') {
+                map.setView([27.3292, 68.1388], 15);
+                bouwBakenMarkerData('m1', 27.3292, 68.1388, 'Nederzetting Mohenjo-Daro', '#e3b341', 'vierkant');
             } else if (preset === 'stonehenge') {
                 map.setView([51.1789, -1.8262], 16);
                 bouwBakenMarkerData('st1', 51.1789, -1.8262, 'Heiligdom Stonehenge', '#388bfd', 'cirkel');
             } else if (preset === 'avebury') {
                 map.setView([51.428, -1.854], 15);
                 bouwBakenMarkerData('ave1', 51.428, -1.854, 'Avebury Steencirkel', '#388bfd', 'cirkel');
-            } else if (preset === 'suttonhoo') {
-                map.setView([52.088, 1.338], 16);
-                bouwBakenMarkerData('uk_sut1', 52.088, 1.338, 'Sutton Hoo Necropool', '#da3633', 'cirkel');
-            } else if (preset === 'vindolanda') {
-                map.setView([54.991, -2.360], 15);
-                bouwBakenMarkerData('uk_vin1', 54.991, -2.360, 'Vindolanda Fort (Muur van Hadrianus)', '#e3b341', 'vierkant');
-
-            // Frankrijk
+            } else if (preset === 'callanish') {
+                map.setView([58.197, -6.745], 15);
+                bouwBakenMarkerData('cal1', 58.197, -6.745, 'Callanish Stones', '#388bfd', 'cirkel');
+            } else if (preset === 'brodgar') {
+                map.setView([59.001, -3.229], 15);
+                bouwBakenMarkerData('bro1', 59.001, -3.229, 'Ring of Brodgar', '#388bfd', 'cirkel');
             } else if (preset === 'carnac') {
                 map.setView([47.590, -3.082], 15);
                 bouwBakenMarkerData('car1', 47.590, -3.082, 'Carnac Alignements', '#388bfd', 'vierkant');
-            } else if (preset === 'alesia') {
-                map.setView([47.536, 4.498], 14);
-                bouwBakenMarkerData('fr_ale1', 47.536, 4.498, 'Alesia Oppidum', '#da3633', 'driehoek');
-            } else if (preset === 'bibracte') {
-                map.setView([46.924, 4.037], 14);
-                bouwBakenMarkerData('fr_bib1', 46.924, 4.037, 'Bibracte (Mont Beuvray)', '#388bfd', 'vierkant');
-
-            // Overige/Globaal
-            } else if (preset === 'pompeii') {
-                map.setView([40.751, 14.487], 15);
-                bouwBakenMarkerData('p1', 40.749, 14.484, 'Forum (Pompeï)', '#da3633', 'vierkant');
-                bouwBakenMarkerData('p2', 40.751, 14.491, 'Amfitheater', '#e3b341', 'cirkel');
-            } else if (preset === 'troje') {
-                map.setView([39.9575, 26.2389], 15);
-                bouwBakenMarkerData('t1', 39.9575, 26.2389, 'Opgraving Troje', '#da3633', 'cirkel');
             } else if (preset === 'doggerland') {
                 map.setView([54.5, 2.5], 7);
                 bouwBakenMarkerData('dog1', 54.5, 2.5, 'Doggerbank', '#388bfd', 'cirkel');
                 bouwBakenMarkerData('dog2', 53.5, 3.0, 'Zuidelijke Dogger', '#e3b341', 'vierkant');
+            } else if (preset === 'nehalennia') {
+                map.setView([51.6, 3.7], 11);
+                bouwBakenMarkerData('neh1', 51.616, 3.933, 'Tempel Colijnsplaat (Oosterschelde)', '#e3b341', 'vierkant');
+                bouwBakenMarkerData('neh2', 51.566, 3.483, 'Tempel Domburg', '#e3b341', 'vierkant');
             } else if (preset === 'alle_steencirkels') {
                 map.setView([54.0, -3.0], 6);
                 bouwBakenMarkerData('st1', 51.1789, -1.8262, 'Stonehenge', '#388bfd', 'cirkel');
