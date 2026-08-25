@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archeo-Astronomie AR HUD | Campen Matrix</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e24;
+            --panel-bg: #2b2b36;
+            --accent-orange: #ff6b4a;
+            --accent-purple: #8a2be2;
+            --text-light: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Zijpaneel (Console / Controls) */
+        #sidebar {
+            width: 320px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid #3d3d4a;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        h2 { margin-top: 0; font-size: 16px; letter-spacing: 1px; color: var(--accent-orange); }
+        
+        .control-group {
+            background: #1e1e24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #3d3d4a;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #315273;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #3a638c; }
+        button.active { background-color: #2e8b57; }
+        button.danger { background-color: #c0392b; }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #2b2b36;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .data-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #4ade80;
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            height: 60px;
+            overflow-y: auto;
+        }
+
+        /* Main Viewport (Video + HUD) */
+        #viewport {
+            flex-grow: 1;
+            position: relative;
+            background: #000;
+        }
+
+        #video-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #hud-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Laat muiskliks door naar onderliggende lagen */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2>SYSTEEM TOOL / CONSOLE</h2>
+        
+        <div class="control-group">
+            <label>1. Sensor Hardware (NMEA 0183)</label>
+            <select id="baud-rate">
+                <option value="4800">4800 Baud (Standaard NMEA)</option>
+                <option value="9600">9600 Baud</option>
+                <option value="38400">38400 Baud</option>
+                <option value="115200">115200 Baud</option>
+            </select>
+            <button id="btn-connect-serial">Verbind via Web Serial API</button>
+            <div class="data-display" id="serial-output">Wacht op NMEA data...</div>
+        </div>
+
+        <div class="control-group">
+            <label>2. Livefeed Camera</label>
+            <button id="btn-start-video">Start Livefeed</button>
+        </div>
+
+        <div class="control-group">
+            <label>3. Archeoastronomische Matrix</label>
+            <select id="target-selector">
+                <option value="13.8" data-name="Orisant (Maan-As)">Laad: Orisant Maan-as (13.8°)</option>
+                <option value="137.5" data-name="Nehalennia Domburg (Zonne-As)">Laad: Nehalennia Zonne-as (137.5°)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <video id="video-feed" autoplay playsinline></video>
+        <canvas id="hud-canvas"></canvas>
+    </div>
+
+    <script>
+        // === STATE & CONFIGURATIE ===
+        let actueleAzimut = 0.0; // Wordt geüpdatet door NMEA
+        let actuelePitch = 0.0;
+        let isSerialConnected = false;
+        const CAMERA_FOV = 60; // Pas dit aan naar de FOV van je specifieke lens
+
+        // DOM Elementen
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('hud-canvas');
+        const ctx = canvas.getContext('2d');
+        const serialOutput = document.getElementById('serial-output');
+        const targetSelector = document.getElementById('target-selector');
+
+        // Resize canvas om de videocontainer te matchen
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // === 1. WEBRTC VIDEO FEED ===
+        document.getElementById('btn-start-video').addEventListener('click', async (e) => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                video.srcObject = stream;
+                e.target.classList.add('active');
+                e.target.innerText = 'Livefeed Actief';
+            } catch (err) {
+                console.error("Camera toegang geweigerd of fout:", err);
+                alert("Kon camera niet starten. Controleer permissies.");
+            }
+        });
+
+        // === 2. WEB SERIAL API (NMEA 0183 PARSER) ===
+        document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
+            if (!("serial" in navigator)) {
+                alert("Web Serial API wordt niet ondersteund in deze browser. Gebruik Chrome of Edge.");
+                return;
+            }
+
+            try {
+                const baudRate = parseInt(document.getElementById('baud-rate').value);
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: baudRate });
+                
+                isSerialConnected = true;
+                e.target.classList.add('active');
+                e.target.innerText = 'Hardware Verbonden';
+
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                const reader = textDecoder.readable.getReader();
+
+                let buffer = "";
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += value;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Bewaar incomplete regel voor de volgende run
+
+                    for (let line of lines) {
+                        parseNMEA(line.trim());
+                    }
+                }
+            } catch (err) {
+                console.error("Serial Fout:", err);
+            }
+        });
+
+        // NMEA Parser (Focus op Heading data, bv. $HEHDT of $GPHDT)
+        function parseNMEA(sentence) {
+            if (sentence.startsWith('$')) {
+                const parts = sentence.split(',');
+                
+                // HDT = Heading True
+                if (parts[0].endsWith('HDT') && parts[1]) {
+                    actueleAzimut = parseFloat(parts[1]);
+                    serialOutput.innerText = `[NMEA] Kompas Azimut: ${actueleAzimut.toFixed(1)}°\nRAW: ${sentence}`;
+                }
+                // Hulp inbouwen voor pitch/roll indien beschikbaar via eigen P-zinnen (proprietary)
+                else if (parts[0].startsWith('$P') && parts.length > 2) {
+                    // Custom parsing logica voor telescoop-hoogte / pitch
+                }
+            }
+        }
+
+        // === 3. CANVAS HUD RENDER LOOP ===
+        function drawHUD() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const targetAzimut = parseFloat(targetSelector.value);
+            const targetName = targetSelector.options[targetSelector.selectedIndex].dataset.name;
+
+            // Voor debuggen zonder hardware: simuleer een langzame rotatie
+            if (!isSerialConnected) {
+                actueleAzimut = (actueleAzimut + 0.02) % 360;
+                serialOutput.innerText = `[SIMULATIE] Azimut: ${actueleAzimut.toFixed(1)}°\nVerbind hardware voor live data.`;
+            }
+
+            // Bereken hoekverschil
+            let deltaHoek = targetAzimut - actueleAzimut;
+            if (deltaHoek > 180) deltaHoek -= 360;
+            if (deltaHoek < -180) deltaHoek += 360;
+
+            // Teken alleen als het doel binnen het zichtveld valt
+            if (Math.abs(deltaHoek) <= CAMERA_FOV / 2) {
+                const pixelsPerGraad = canvas.width / CAMERA_FOV;
+                const xPos = (canvas.width / 2) + (deltaHoek * pixelsPerGraad);
+                const centerY = canvas.height / 2;
+
+                // Virtuele Zichtlijn (Verticaal)
+                ctx.beginPath();
+                ctx.moveTo(xPos, 0);
+                ctx.lineTo(xPos, canvas.height);
+                ctx.strokeStyle = 'rgba(138, 43, 226, 0.8)'; // Paars voor de archeo-as
+                ctx.lineWidth = 3;
+                ctx.setLineDash([15, 10]);
+                ctx.stroke();
+
+                // Target Reticle (Kruis)
+                ctx.beginPath();
+                ctx.arc(xPos, centerY, 30, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(255, 107, 74, 1)'; // Oranje accent
+                ctx.setLineDash([]);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(xPos - 45, centerY);
+                ctx.lineTo(xPos + 45, centerY);
+                ctx.moveTo(xPos, centerY - 45);
+                ctx.lineTo(xPos, centerY + 45);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Annotatie Box
+                ctx.fillStyle = 'rgba(30, 30, 36, 0.85)';
+                ctx.fillRect(xPos + 40, centerY - 25, 240, 60);
+                ctx.strokeStyle = 'rgba(255, 107, 74, 0.5)';
+                ctx.strokeRect(xPos + 40, centerY - 25, 240, 60);
+                
+                ctx.fillStyle = '#4ade80'; // Neon groen voor tekst
+                ctx.font = 'bold 14px "Courier New"';
+                ctx.fillText(`TARGET : ${targetName}`, xPos + 50, centerY - 5);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`AZIMUT : ${targetAzimut.toFixed(1)}°`, xPos + 50, centerY + 15);
+                ctx.fillText(`OFFSET : ${Math.abs(deltaHoek).toFixed(1)}°`, xPos + 50, centerY + 28);
+            }
+
+            // Statische UI overlays (Centrale indicator voor actuele richting)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(canvas.width / 2 - 40, 20, 80, 30);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${actueleAzimut.toFixed(1)}°`, canvas.width / 2, 42);
+            ctx.textAlign = 'left';
+
+            // Loop de frame rendering
+            requestAnimationFrame(drawHUD);
+        }
+
+        // Start de HUD engine
+        drawHUD();
+    </script>
+</body>
+</html>
