@@ -155,6 +155,7 @@
             position: relative;
             width: 100%;
             height: 100%;
+            transform: scale(1);
             transform-origin: center center;
             transition: transform 0.05s ease-out;
             will-change: transform;
@@ -295,7 +296,7 @@
             <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
-        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X -->
+        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X (START 1X) -->
         <div class="control-group">
             <label>5. Filters & Sharp-Zoom (tot 1500x)</label>
             <select id="filter-selector">
@@ -305,7 +306,7 @@
                 <option value="filter-night">🟢 Nachtzicht</option>
             </select>
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x (HD)</span>
+                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x (1x Start)</span>
             </div>
             <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="1">
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
@@ -342,8 +343,8 @@
     <script>
         // === STATE ENGINE & CONFIGURATIE ===
         let actueleAzimut = 0.0;
-        let sensorOffset = 0.0;          // Offset voor dynamische kalibratie
-        let lastRawHeading = 0.0;        // Ongefilterde hardwarehoek
+        let sensorOffset = 0.0;
+        let lastRawHeading = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
         let isLidarActive = true;
@@ -492,21 +493,51 @@
             }
         });
 
-        // === 2. SENSOREN & DYNAMISCHE NOORD / ZUID KALIBRATIE ===
-        function handleOrientation(event) {
-            let heading = null;
-            if (event.webkitCompassHeading !== undefined) {
-                heading = event.webkitCompassHeading;
-            } else if (event.alpha !== null) {
-                heading = event.absolute ? (360 - event.alpha) : ((360 - event.alpha) % 360);
+        // === 2. DYNAMISCHE 3D ORIËNTATIE & KOMPAS ENGINE (HERSTELDE RICHTING) ===
+        function computeTrueHeading(e) {
+            // iOS Safari levert direct nauwkeurige kompasheading
+            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+                return e.webkitCompassHeading;
             }
 
+            // Android W3C DeviceOrientation: Bereken echte kompasrichting met 3D rotatiematrix
+            if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
+                const degToRad = Math.PI / 180;
+                const alpha = e.alpha * degToRad;
+                const beta = e.beta * degToRad;
+                const gamma = e.gamma * degToRad;
+
+                const cA = Math.cos(alpha);
+                const sA = Math.sin(alpha);
+                const cB = Math.cos(beta);
+                const sB = Math.sin(beta);
+                const cG = Math.cos(gamma);
+                const sG = Math.sin(gamma);
+
+                // Bereken Z- en Y-componenten van de kijkvector
+                const rA = -cA * sG - sA * sB * cG;
+                const rB = -sA * sG + cA * sB * cG;
+
+                let compassHeading = Math.atan2(rA, rB) * (180 / Math.PI);
+                if (compassHeading < 0) compassHeading += 360;
+
+                // Corrigeer voor schermoriëntatie (portret vs landschap)
+                const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
+                compassHeading = (compassHeading + screenAngle) % 360;
+
+                return compassHeading;
+            }
+            return null;
+        }
+
+        function handleOrientation(event) {
+            const heading = computeTrueHeading(event);
             if (heading !== null && !isNaN(heading)) {
-                lastRawHeading = (heading + 360) % 360;
-                // Pas dynamische sensorOffset toe en blijf actief meedraaien
+                lastRawHeading = heading;
+                // Live vector recalculatie met behoud van kalibratie
                 actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
                 isMobileSensorActive = true;
-                serialOutput.innerText = `[Live Sensor] Azimut: ${actueleAzimut.toFixed(1)}° (Offset: ${sensorOffset.toFixed(0)}°)`;
+                serialOutput.innerText = `[Live Sensor] Azimut: ${actueleAzimut.toFixed(1)}°`;
             }
         }
 
@@ -540,25 +571,24 @@
 
         btnSnapNorth.addEventListener('click', async () => {
             await initSensor();
-            // Kalibreer huidige kijkrichting direct naar 0° Noord en laat sensor meebewegen
+            // Kalibreer huidige kijkrichting exact naar 0° Noord zonder het kompas vast te zetten
             sensorOffset = (360 - lastRawHeading) % 360;
             actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
             btnSnapNorth.classList.add('active');
             btnSnapSouth.classList.remove('active');
-            serialOutput.innerText = `[Gekalibreerd op Noord] Live: ${actueleAzimut.toFixed(1)}°`;
+            serialOutput.innerText = `[Gekalibreerd Noord] Live: ${actueleAzimut.toFixed(1)}°`;
         });
 
         btnSnapSouth.addEventListener('click', async () => {
             await initSensor();
-            // Kalibreer huidige kijkrichting direct naar 180° Zuid en laat sensor meebewegen
+            // Kalibreer huidige kijkrichting exact naar 180° Zuid zonder het kompas vast te zetten
             sensorOffset = (180 - lastRawHeading + 360) % 360;
             actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
             btnSnapSouth.classList.add('active');
             btnSnapNorth.classList.remove('active');
-            serialOutput.innerText = `[Gekalibreerd op Zuid] Live: ${actueleAzimut.toFixed(1)}°`;
+            serialOutput.innerText = `[Gekalibreerd Zuid] Live: ${actueleAzimut.toFixed(1)}°`;
         });
 
-        // Automatisch luisteren indien ondersteund
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientationabsolute', handleOrientation, true);
             window.addEventListener('deviceorientation', handleOrientation, true);
@@ -595,10 +625,10 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 3. ADAPTIEVE SHARP-ZOOM ENGINE ===
+        // === 3. BEGINSTAND 1X ZOOM & ADAPTIEVE SHARP ENGINE ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
-            zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)';
+            zoomVal.innerText = z === 1 ? '1.0x (Start)' : (z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)');
 
             if (videoTrack && cameraCapabilities && cameraCapabilities.zoom) {
                 const hwMin = cameraCapabilities.zoom.min;
@@ -621,6 +651,10 @@
                 }
             }
         }
+
+        // Initialiseer strikt op beginstand 1x
+        zoomSlider.value = 1;
+        applySharpZoom();
 
         zoomSlider.addEventListener('input', applySharpZoom);
         chkAutoSharpness.addEventListener('change', applySharpZoom);
@@ -764,7 +798,6 @@
             const cx = w / 2;
             const cy = h / 2;
 
-            // Zachte simulatie alleen als er nergens een sensor of input actief is
             if (!isSerialConnected && !isMobileSensorActive) {
                 actueleAzimut = (actueleAzimut + 0.03) % 360;
             }
@@ -926,7 +959,7 @@
 
                 svCtx.beginPath();
                 svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
-                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx + 50, cy);
+                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
                 svCtx.stroke();
 
                 svCtx.beginPath();
