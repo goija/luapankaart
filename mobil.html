@@ -203,23 +203,9 @@
     <div id="sidebar">
         <h2>SURVEY & LIDAR HUD</h2>
         
-        <!-- 1. HARDWARE SENSORS & MOBIELE ORIËNTATIE -->
+        <!-- 1. LIVEFEED STREAMS (BOVENAAN) -->
         <div class="control-group">
-            <label>1. Sensoren & Kompas</label>
-            <button id="btn-enable-sensor">📱 Activeer Sensor</button>
-            <select id="baud-rate">
-                <option value="4800">4800 Baud</option>
-                <option value="9600">9600 Baud</option>
-                <option value="38400">38400 Baud</option>
-                <option value="115200">115200 Baud</option>
-            </select>
-            <button id="btn-connect-serial">Serial API</button>
-            <div class="data-display" id="serial-output">Sensor: Auto (Sim)</div>
-        </div>
-
-        <!-- 2. BEELDINVOER & SCHERMDELEN -->
-        <div class="control-group">
-            <label>2. Live Streams</label>
+            <label>1. Live Streams & Viewport</label>
             <div class="btn-grid">
                 <button id="btn-toggle-camera">Camera</button>
                 <button id="btn-toggle-screen">Scherm</button>
@@ -228,6 +214,24 @@
                 <button id="btn-toggle-fullscreen">Full</button>
                 <button id="btn-toggle-pip">PiP</button>
             </div>
+        </div>
+
+        <!-- 2. SENSOREN, KOMPAS & AZIMUT RICHTINGEN (ERONDER) -->
+        <div class="control-group">
+            <label>2. Sensoren & Kompas Sturing</label>
+            <button id="btn-enable-sensor">📱 Activeer Sensor</button>
+            <div class="btn-grid">
+                <button id="btn-snap-north">⬆ Naar Noord (0°)</button>
+                <button id="btn-snap-south">⬇ Naar Zuid (180°)</button>
+            </div>
+            <select id="baud-rate">
+                <option value="4800">4800 Baud</option>
+                <option value="9600">9600 Baud</option>
+                <option value="38400">38400 Baud</option>
+                <option value="115200">115200 Baud</option>
+            </select>
+            <button id="btn-connect-serial">Serial API</button>
+            <div class="data-display" id="serial-output">Sensor: Auto (Sim)</div>
         </div>
 
         <!-- 3. LAAGBEHEER -->
@@ -259,9 +263,10 @@
             </div>
         </div>
 
-        <!-- 4. LIDAR SCANS & HISTORISCHE METINGEN -->
+        <!-- 4. LIDAR SCANS MET AAN/UIT SCHAKELAAR & METINGEN -->
         <div class="control-group">
-            <label>4. LiDAR & Historische Maateenheid</label>
+            <label>4. LiDAR Engine & Historische Maten</label>
+            <button id="btn-toggle-lidar-state" class="active">⚡ LiDAR: AAN</button>
             <select id="geo-unit-selector">
                 <optgroup label="🌊 Historische Zeemijlen / Maritiem">
                     <option value="holland_zeemijl">Hollandse Zeemijl (5555.55 m)</option>
@@ -284,7 +289,7 @@
                 <span>LiDAR Bereik:</span><span id="lidar-range-val" style="color:var(--accent-cyan); font-weight:bold;">120m</span>
             </div>
             <input type="range" id="lidar-range-slider" min="10" max="5000" step="10" value="120">
-            <div class="data-display" id="lidar-metrics">LiDAR Afstand: 120.0 m&#10;Historische Maat: 31.86 Rijnl. Roede</div>
+            <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
         <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X -->
@@ -328,10 +333,11 @@
     </div>
 
     <script>
-        // === STATE ENGINE & HARDWARE ===
+        // === STATE ENGINE & CONFIGURATIE ===
         let actueleAzimut = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
+        let isLidarActive = true;
         const CAMERA_FOV = 60;
 
         let cameraStream = null;
@@ -352,6 +358,9 @@
         const btnToggleCamera = document.getElementById('btn-toggle-camera');
         const btnToggleScreen = document.getElementById('btn-toggle-screen');
         const btnEnableSensor = document.getElementById('btn-enable-sensor');
+        const btnSnapNorth = document.getElementById('btn-snap-north');
+        const btnSnapSouth = document.getElementById('btn-snap-south');
+        const btnToggleLidarState = document.getElementById('btn-toggle-lidar-state');
 
         const layers = {
             compass: { canvas: document.getElementById('layer-compass'), ctx: document.getElementById('layer-compass').getContext('2d'), chk: document.getElementById('chk-layer-compass') },
@@ -362,7 +371,6 @@
             shadow:  { canvas: document.getElementById('layer-shadow'),  ctx: document.getElementById('layer-shadow').getContext('2d'),  chk: document.getElementById('chk-layer-shadow') }
         };
 
-        // Historische Maatconversie Factoren (naar meters)
         const HISTORICAL_UNITS = {
             holland_zeemijl: { factor: 5555.55, name: "Holl. Zeemijl", code: "HZM" },
             spaans_legua:    { factor: 5572.00, name: "Legua Maritima", code: "LEG" },
@@ -400,7 +408,71 @@
             });
         });
 
-        // === 1. MOBIELE COMPASS & GYROSCOOP ===
+        // === 1. LIVEFEED STREAMS ===
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+            if (video.srcObject && !screenStream) video.srcObject = null;
+            btnToggleCamera.classList.remove('danger');
+            btnToggleCamera.innerText = 'Camera';
+        }
+
+        btnToggleCamera.addEventListener('click', async () => {
+            if (cameraStream) {
+                stopCamera();
+            } else {
+                try {
+                    if (screenStream) stopScreenShare();
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                    });
+                    video.srcObject = cameraStream;
+                    btnToggleCamera.classList.add('danger');
+                    btnToggleCamera.innerText = 'Stop Cam';
+                } catch (err) { alert("Camera fout: " + err.message); }
+            }
+        });
+
+        function stopScreenShare() {
+            if (screenStream) {
+                screenStream.getTracks().forEach(t => t.stop());
+                screenStream = null;
+            }
+            if (video.srcObject && !cameraStream) video.srcObject = null;
+            btnToggleScreen.classList.remove('danger');
+            btnToggleScreen.innerText = 'Scherm';
+        }
+
+        btnToggleScreen.addEventListener('click', async () => {
+            if (screenStream) {
+                stopScreenShare();
+            } else {
+                try {
+                    if (cameraStream) stopCamera();
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                    video.srcObject = screenStream;
+                    btnToggleScreen.classList.add('danger');
+                    btnToggleScreen.innerText = 'Stop Deel';
+                    screenStream.getVideoTracks()[0].onended = stopScreenShare;
+                } catch (err) { console.error(err); }
+            }
+        });
+
+        // === 2. SENSOREN & KOMPAS DRAAIEN (NOORD / ZUID) ===
+        btnSnapNorth.addEventListener('click', () => {
+            isMobileSensorActive = false;
+            actueleAzimut = 0.0;
+            serialOutput.innerText = `[Kompas] Vastgezet op Noord: 0.0°`;
+        });
+
+        btnSnapSouth.addEventListener('click', () => {
+            isMobileSensorActive = false;
+            actueleAzimut = 180.0;
+            serialOutput.innerText = `[Kompas] Vastgezet op Zuid: 180.0°`;
+        });
+
         function handleOrientation(event) {
             let heading = null;
             if (event.webkitCompassHeading !== undefined) {
@@ -439,60 +511,71 @@
             window.addEventListener('deviceorientation', handleOrientation, true);
         }
 
-        // === 2. CAMERA FEED: START & STOP ===
-        function stopCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(t => t.stop());
-                cameraStream = null;
-            }
-            if (video.srcObject && !screenStream) video.srcObject = null;
-            btnToggleCamera.classList.remove('danger');
-            btnToggleCamera.innerText = 'Camera';
-        }
-
-        btnToggleCamera.addEventListener('click', async () => {
-            if (cameraStream) {
-                stopCamera();
-            } else {
-                try {
-                    if (screenStream) stopScreenShare();
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
-                    });
-                    video.srcObject = cameraStream;
-                    btnToggleCamera.classList.add('danger');
-                    btnToggleCamera.innerText = 'Stop Cam';
-                } catch (err) { alert("Camera fout: " + err.message); }
-            }
+        document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
+            if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: parseInt(document.getElementById('baud-rate').value) });
+                isSerialConnected = true;
+                e.target.classList.add('active');
+                const decoder = new TextDecoderStream();
+                port.readable.pipeTo(decoder.writable);
+                const reader = decoder.readable.getReader();
+                let buf = "";
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buf += value;
+                    const lines = buf.split('\n');
+                    buf = lines.pop();
+                    for (let l of lines) {
+                        if (l.includes('HDT') || l.includes('RMC')) {
+                            let p = l.split(',');
+                            if (p[1] && !isNaN(parseFloat(p[1]))) {
+                                actueleAzimut = parseFloat(p[1]);
+                                serialOutput.innerText = `[NMEA] Azimut: ${actueleAzimut.toFixed(1)}°`;
+                            }
+                        }
+                    }
+                }
+            } catch (err) { console.error(err); }
         });
 
-        // === 3. SCHERM DELEN: START & STOP ===
-        function stopScreenShare() {
-            if (screenStream) {
-                screenStream.getTracks().forEach(t => t.stop());
-                screenStream = null;
-            }
-            if (video.srcObject && !cameraStream) video.srcObject = null;
-            btnToggleScreen.classList.remove('danger');
-            btnToggleScreen.innerText = 'Scherm';
-        }
-
-        btnToggleScreen.addEventListener('click', async () => {
-            if (screenStream) {
-                stopScreenShare();
+        // === 3. LIDAR AAN/UIT & BEREKENINGEN ===
+        btnToggleLidarState.addEventListener('click', () => {
+            isLidarActive = !isLidarActive;
+            if (isLidarActive) {
+                btnToggleLidarState.classList.remove('danger');
+                btnToggleLidarState.classList.add('active');
+                btnToggleLidarState.innerText = '⚡ LiDAR: AAN';
             } else {
-                try {
-                    if (cameraStream) stopCamera();
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-                    video.srcObject = screenStream;
-                    btnToggleScreen.classList.add('danger');
-                    btnToggleScreen.innerText = 'Stop Deel';
-                    screenStream.getVideoTracks()[0].onended = stopScreenShare;
-                } catch (err) { console.error(err); }
+                btnToggleLidarState.classList.remove('active');
+                btnToggleLidarState.classList.add('danger');
+                btnToggleLidarState.innerText = '⭕ LiDAR: UIT';
+                layers.lidar.ctx.clearRect(0, 0, layers.lidar.canvas.width, layers.lidar.canvas.height);
             }
+            updateLidarMetrics();
         });
 
-        // === 4. VOLLEDIG SCHERM & PIP ===
+        function updateLidarMetrics() {
+            const m = parseFloat(lidarRangeSlider.value);
+            lidarRangeVal.innerText = m >= 1000 ? (m / 1000).toFixed(2) + 'km' : m.toFixed(0) + 'm';
+            const unitKey = geoUnitSelector.value;
+            const unit = HISTORICAL_UNITS[unitKey];
+            const converted = (m / unit.factor).toFixed(3);
+
+            if (isLidarActive) {
+                lidarMetrics.innerText = `LiDAR: Actief (${m.toFixed(1)} m)\nMaat: ${converted} ${unit.name} (${unit.code})`;
+            } else {
+                lidarMetrics.innerText = `LiDAR: Stand-by / Uitgeschakeld\nReferentie: ${converted} ${unit.name}`;
+            }
+        }
+
+        lidarRangeSlider.addEventListener('input', updateLidarMetrics);
+        geoUnitSelector.addEventListener('change', updateLidarMetrics);
+        updateLidarMetrics();
+
+        // === 4. ZOOM, FILTERS & VIEWPORT ===
         document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
             else document.exitFullscreen();
@@ -505,7 +588,6 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 5. TOT 1500X ZOOM & OPTISCHE FILTERS ===
         zoomSlider.addEventListener('input', (e) => {
             const z = parseFloat(e.target.value);
             zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x' : z.toFixed(1) + 'x';
@@ -514,7 +596,7 @@
 
         filterSelector.addEventListener('change', (e) => { video.className = e.target.value; });
 
-        // === 6. CAPTURE & OPNAME ===
+        // === 5. OPNAME & FOTO ===
         function getMergedLayersCanvas() {
             const merged = document.createElement('canvas');
             merged.width = viewport.clientWidth;
@@ -592,56 +674,7 @@
             }
         });
 
-        // === 7. WEB SERIAL API (NMEA 0183) ===
-        document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
-            if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
-            try {
-                const port = await navigator.serial.requestPort();
-                await port.open({ baudRate: parseInt(document.getElementById('baud-rate').value) });
-                isSerialConnected = true;
-                e.target.classList.add('active');
-                const decoder = new TextDecoderStream();
-                port.readable.pipeTo(decoder.writable);
-                const reader = decoder.readable.getReader();
-                let buf = "";
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buf += value;
-                    const lines = buf.split('\n');
-                    buf = lines.pop();
-                    for (let l of lines) {
-                        if (l.includes('HDT') || l.includes('RMC')) {
-                            let p = l.split(',');
-                            if (p[1] && !isNaN(parseFloat(p[1]))) {
-                                actueleAzimut = parseFloat(p[1]);
-                                serialOutput.innerText = `[NMEA] Azimut: ${actueleAzimut.toFixed(1)}°`;
-                            }
-                        }
-                    }
-                }
-            } catch (err) { console.error(err); }
-        });
-
-        // === 8. LIDAR CALCULATOR & POINT-CLOUD SIMULATOR ===
-        lidarRangeSlider.addEventListener('input', (e) => {
-            const m = parseFloat(e.target.value);
-            lidarRangeVal.innerText = m >= 1000 ? (m / 1000).toFixed(2) + 'km' : m.toFixed(0) + 'm';
-            
-            const unitKey = geoUnitSelector.value;
-            const unit = HISTORICAL_UNITS[unitKey];
-            const converted = (m / unit.factor).toFixed(3);
-            lidarMetrics.innerText = `LiDAR Range: ${m.toFixed(1)} m\nConversie: ${converted} ${unit.name} (${unit.code})`;
-        });
-
-        geoUnitSelector.addEventListener('change', () => {
-            lidarRangeSlider.dispatchEvent(new Event('input'));
-        });
-
-        // Initialiseer LiDAR data display
-        lidarRangeSlider.dispatchEvent(new Event('input'));
-
-        // === 9. HOOFD RENDER LOOP MET GELAAGDE OVERLAYS ===
+        // === 6. HOOFD RENDER LOOP ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
@@ -717,12 +750,11 @@
                 cCtx.textAlign = 'left';
             }
 
-            // --- LAAG 2: LIDAR POINTCLOUD & HISTORISCHE AFSTANDMETING ---
-            if (layers.lidar.chk.checked) {
+            // --- LAAG 2: LIDAR POINTCLOUD & METINGEN (ALS INGESCHAKELD) ---
+            if (layers.lidar.chk.checked && isLidarActive) {
                 const lCtx = layers.lidar.ctx;
                 lCtx.clearRect(0, 0, w, h);
 
-                // Teken LiDAR raster en scanner cirkels
                 lCtx.strokeStyle = 'rgba(0, 245, 212, 0.4)';
                 lCtx.lineWidth = 1.2;
 
@@ -734,14 +766,12 @@
                     lCtx.stroke();
                     lCtx.setLineDash([]);
                     
-                    // Afstandslabel per ring
                     let distRing = (currentLidarDist * ((idx + 1) / 4)).toFixed(0);
                     lCtx.fillStyle = 'rgba(0, 245, 212, 0.7)';
                     lCtx.font = '8px "Courier New"';
                     lCtx.fillText(`${distRing}m`, cx + r + 4, cy - 2);
                 });
 
-                // Gesimuleerde LiDAR Pointcloud Targets
                 const numPoints = 18;
                 for (let i = 0; i < numPoints; i++) {
                     const angle = (i * (360 / numPoints) + actueleAzimut * 1.5) * (Math.PI / 180);
@@ -755,7 +785,6 @@
                     lCtx.fill();
                 }
 
-                // Centrale LiDAR Reticle Box
                 lCtx.strokeStyle = 'var(--accent-cyan)';
                 lCtx.lineWidth = 1.5;
                 lCtx.strokeRect(cx - 25, cy - 25, 50, 50);
@@ -767,7 +796,7 @@
 
                 lCtx.fillStyle = 'var(--accent-cyan)';
                 lCtx.font = 'bold 10px "Courier New"';
-                lCtx.fillText(`⚡ LIDAR AFSTANDSRETICLE`, cx + 42, cy - 20);
+                lCtx.fillText(`⚡ LIDAR METING ACTIEF`, cx + 42, cy - 20);
                 lCtx.fillStyle = '#fff';
                 lCtx.fillText(`METRISCH : ${currentLidarDist.toFixed(1)} m`, cx + 42, cy - 6);
                 lCtx.fillStyle = 'var(--accent-yellow)';
@@ -816,7 +845,6 @@
                 svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
                 svCtx.stroke();
 
-                // Stadia draden voor kettingmetingen
                 svCtx.beginPath();
                 svCtx.moveTo(cx - 20, cy - 25); svCtx.lineTo(cx + 20, cy - 25);
                 svCtx.moveTo(cx - 20, cy + 25); svCtx.lineTo(cx + 20, cy + 25);
