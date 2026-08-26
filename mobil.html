@@ -190,10 +190,24 @@
         #layer-scilab   { z-index: 6; }
         #layer-compass  { z-index: 7; }
 
-        .filter-none { filter: contrast(110%) brightness(102%); }
-        .filter-sun { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
-        .filter-moon { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
-        .filter-night { filter: brightness(145%) contrast(200%) tint(green) invert(10%) sepia(100%) hue-rotate(80deg) saturate(450%); }
+        /* === VOLLEDIGE SPECTRALE & SENSOR FILTERSET === */
+        .filter-none       { filter: contrast(110%) brightness(102%); }
+        
+        /* Zonne- & Eclipsfilters */
+        .filter-sun-solar  { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
+        .filter-sun-halpha { filter: contrast(300%) brightness(70%) saturate(600%) hue-rotate(330deg) drop-shadow(0 0 4px #ff0033); }
+        .filter-sun-nd     { filter: brightness(35%) contrast(350%) grayscale(40%) sepia(30%); }
+
+        /* Maan- & Nachtfilters */
+        .filter-moon-lumi  { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
+        .filter-moon-lpr   { filter: contrast(200%) brightness(110%) hue-rotate(200deg) saturate(180%) invert(5%); }
+        .filter-moon-ir    { filter: grayscale(100%) brightness(140%) contrast(220%); }
+
+        /* Sensor- & Militair / Meetfilters */
+        .filter-night-gen3 { filter: brightness(145%) contrast(200%) sepia(100%) hue-rotate(80deg) saturate(450%); }
+        .filter-flir-iron  { filter: contrast(260%) brightness(95%) saturate(400%) hue-rotate(260deg) invert(20%); }
+        .filter-flir-white { filter: grayscale(100%) invert(100%) contrast(280%) brightness(115%); }
+        .filter-mono-edge  { filter: grayscale(100%) contrast(400%) brightness(90%); }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -296,15 +310,32 @@
             <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
-        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X (START 1X) -->
+        <!-- 5. VOLLEDIG SPECTRUM FILTERS & ZOOM TOT 1500X (START 1X) -->
         <div class="control-group">
-            <label>5. Filters & Sharp-Zoom (tot 1500x)</label>
+            <label>5. Spectraalfilters & Sharp-Zoom (tot 1500x)</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard (Scherpte Boost)</option>
-                <option value="filter-sun">☀️ Zonnefilter</option>
-                <option value="filter-moon">🌙 Maanfilter</option>
-                <option value="filter-night">🟢 Nachtzicht</option>
+                
+                <optgroup label="☀️ Zon- & Eclipsfilters">
+                    <option value="filter-sun-solar">☀️ Zonnefilter (High-Contrast)</option>
+                    <option value="filter-sun-halpha">🔴 H-Alpha 656nm (Zonnevlammen)</option>
+                    <option value="filter-sun-nd">🌑 Eclips ND-Filter (Zonneverduistering)</option>
+                </optgroup>
+
+                <optgroup label="🌙 Maan- & Astrometriefilters">
+                    <option value="filter-moon-lumi">🌙 Maanfilter (Luminantie / Zilver)</option>
+                    <option value="filter-moon-lpr">🌌 LPR-Filter (Lichtvervuiling Block)</option>
+                    <option value="filter-moon-ir">📡 Infrarood Pass (850nm Astrometrie)</option>
+                </optgroup>
+
+                <optgroup label="🟢 Nachtzicht & Sensorfilters">
+                    <option value="filter-night-gen3">🟢 Nachtzicht Gen-3 (IR Fosfor)</option>
+                    <option value="filter-flir-iron">🔥 FLIR Thermisch (Ironbow)</option>
+                    <option value="filter-flir-white">⚪ White-Hot Thermisch Contrast</option>
+                    <option value="filter-mono-edge">📐 Monochroom LiDAR Contour Edge</option>
+                </optgroup>
             </select>
+            
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
                 <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x (1x Start)</span>
             </div>
@@ -493,35 +524,27 @@
             }
         });
 
-        // === 2. DYNAMISCHE 3D ORIËNTATIE & KOMPAS ENGINE (HERSTELDE RICHTING) ===
+        // === 2. DYNAMISCHE 3D ORIËNTATIE & KOMPAS ENGINE ===
         function computeTrueHeading(e) {
-            // iOS Safari levert direct nauwkeurige kompasheading
             if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
                 return e.webkitCompassHeading;
             }
-
-            // Android W3C DeviceOrientation: Bereken echte kompasrichting met 3D rotatiematrix
             if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
                 const degToRad = Math.PI / 180;
                 const alpha = e.alpha * degToRad;
                 const beta = e.beta * degToRad;
                 const gamma = e.gamma * degToRad;
 
-                const cA = Math.cos(alpha);
-                const sA = Math.sin(alpha);
-                const cB = Math.cos(beta);
-                const sB = Math.sin(beta);
-                const cG = Math.cos(gamma);
-                const sG = Math.sin(gamma);
+                const cA = Math.cos(alpha), sA = Math.sin(alpha);
+                const cB = Math.cos(beta),  sB = Math.sin(beta);
+                const cG = Math.cos(gamma), sG = Math.sin(gamma);
 
-                // Bereken Z- en Y-componenten van de kijkvector
                 const rA = -cA * sG - sA * sB * cG;
                 const rB = -sA * sG + cA * sB * cG;
 
                 let compassHeading = Math.atan2(rA, rB) * (180 / Math.PI);
                 if (compassHeading < 0) compassHeading += 360;
 
-                // Corrigeer voor schermoriëntatie (portret vs landschap)
                 const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
                 compassHeading = (compassHeading + screenAngle) % 360;
 
@@ -534,7 +557,6 @@
             const heading = computeTrueHeading(event);
             if (heading !== null && !isNaN(heading)) {
                 lastRawHeading = heading;
-                // Live vector recalculatie met behoud van kalibratie
                 actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
                 isMobileSensorActive = true;
                 serialOutput.innerText = `[Live Sensor] Azimut: ${actueleAzimut.toFixed(1)}°`;
@@ -571,7 +593,6 @@
 
         btnSnapNorth.addEventListener('click', async () => {
             await initSensor();
-            // Kalibreer huidige kijkrichting exact naar 0° Noord zonder het kompas vast te zetten
             sensorOffset = (360 - lastRawHeading) % 360;
             actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
             btnSnapNorth.classList.add('active');
@@ -581,7 +602,6 @@
 
         btnSnapSouth.addEventListener('click', async () => {
             await initSensor();
-            // Kalibreer huidige kijkrichting exact naar 180° Zuid zonder het kompas vast te zetten
             sensorOffset = (180 - lastRawHeading + 360) % 360;
             actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
             btnSnapSouth.classList.add('active');
@@ -639,29 +659,23 @@
 
             feedWrapper.style.transform = `scale(${z})`;
 
-            if (chkAutoSharpness.checked) {
-                if (z > 1.5) {
-                    const contrastBoost = Math.min(180, 110 + (Math.log10(z) * 25));
-                    const brightnessComp = Math.min(115, 102 + (Math.log10(z) * 4));
-                    video.style.filter = `contrast(${contrastBoost}%) brightness(${brightnessComp}%)`;
-                    video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
-                } else {
-                    video.style.filter = '';
-                    video.style.imageRendering = 'crisp-edges';
-                }
+            // Combineer de gekozen CSS spectrale filterklasse met adaptieve scherpte
+            const selectedFilterClass = filterSelector.value;
+            video.className = selectedFilterClass;
+
+            if (chkAutoSharpness.checked && z > 1.5) {
+                video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
+            } else {
+                video.style.imageRendering = 'crisp-edges';
             }
         }
 
-        // Initialiseer strikt op beginstand 1x
         zoomSlider.value = 1;
         applySharpZoom();
 
         zoomSlider.addEventListener('input', applySharpZoom);
         chkAutoSharpness.addEventListener('change', applySharpZoom);
-        filterSelector.addEventListener('change', (e) => {
-            video.className = e.target.value;
-            applySharpZoom();
-        });
+        filterSelector.addEventListener('change', applySharpZoom);
 
         // === 4. LIDAR AAN/UIT & METINGEN ===
         btnToggleLidarState.addEventListener('click', () => {
@@ -959,7 +973,7 @@
 
                 svCtx.beginPath();
                 svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
-                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
+                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx + 50, cy);
                 svCtx.stroke();
 
                 svCtx.beginPath();
