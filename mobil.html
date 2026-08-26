@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archeo-Astronomie AR HUD | Gelaagde Matrix Engine</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e24;
+            --panel-bg: #2b2b36;
+            --accent-orange: #ff6b4a;
+            --accent-purple: #8a2be2;
+            --accent-green: #4ade80;
+            --accent-cyan: #00f5d4;
+            --accent-blue: #00bbf9;
+            --accent-yellow: #fee440;
+            --text-light: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Zijpaneel (Console / Controls) */
+        #sidebar {
+            width: 380px;
+            min-width: 320px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid #3d3d4a;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        h2 { margin: 0 0 5px 0; font-size: 14px; letter-spacing: 1px; color: var(--accent-orange); }
+        
+        .control-group {
+            background: #1e1e24;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #3d3d4a;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #aaa;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            background-color: #315273;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #3a638c; }
+        button.active { background-color: #2e8b57; }
+        button.danger { background-color: #b91c1c; }
+        button.danger:hover { background-color: #dc2626; }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 6px;
+            background: #2b2b36;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+
+        optgroup {
+            background: #1e1e24;
+            color: var(--accent-orange);
+            font-weight: bold;
+        }
+
+        .data-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            color: var(--accent-green);
+            background: #000;
+            padding: 8px;
+            border-radius: 4px;
+            min-height: 35px;
+            white-space: pre-wrap;
+        }
+
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2b2b36;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            border-left: 3px solid #666;
+        }
+
+        .layer-toggle.active {
+            border-left-color: var(--accent-green);
+        }
+
+        .layer-toggle input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* Viewport Container & Gelaagd Systeem */
+        #viewport {
+            flex-grow: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #feed-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+        }
+
+        #video-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* Gescheiden Canvas Overlay Lagen */
+        .hud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: block;
+        }
+
+        #layer-shadow   { z-index: 2; }
+        #layer-hydro    { z-index: 3; }
+        #layer-survey   { z-index: 4; }
+        #layer-matrix   { z-index: 5; }
+        #layer-scilab   { z-index: 6; }
+        #layer-compass  { z-index: 7; }
+
+        /* Optische Filters */
+        .filter-none { filter: none; }
+        .filter-sun { filter: contrast(220%) brightness(85%) sepia(80%) hue-rotate(-20deg) saturate(300%); }
+        .filter-moon { filter: contrast(160%) brightness(120%) hue-rotate(180deg) saturate(40%); }
+        .filter-night { filter: brightness(140%) contrast(180%) tint(green) invert(10%) sepia(100%) hue-rotate(80deg) saturate(400%); }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: 45vh; }
+            #viewport { height: 55vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ZIJPANEEL MET CONTROLES -->
+    <div id="sidebar">
+        <h2>ARCHEO-AR MATRIX HUD CONSOLE</h2>
+        
+        <!-- 1. HARDWARE SENSORS -->
+        <div class="control-group">
+            <label>1. Sensor Hardware (NMEA 0183)</label>
+            <select id="baud-rate">
+                <option value="4800">4800 Baud (Standaard NMEA)</option>
+                <option value="9600">9600 Baud</option>
+                <option value="38400">38400 Baud</option>
+                <option value="115200">115200 Baud</option>
+            </select>
+            <button id="btn-connect-serial">Verbind via Web Serial API</button>
+            <div class="data-display" id="serial-output">Wacht op NMEA data...</div>
+        </div>
+
+        <!-- 2. BEELDINVOER & SCHERMDELEN -->
+        <div class="control-group">
+            <label>2. Beeldinvoer & Scherm Delen</label>
+            <div class="btn-grid">
+                <button id="btn-start-video">Camera Feed</button>
+                <button id="btn-share-screen">Deel Scherm/Mobiel</button>
+            </div>
+            <div class="btn-grid">
+                <button id="btn-toggle-fullscreen">Volledig Scherm</button>
+                <button id="btn-toggle-pip">Picture-in-Picture</button>
+            </div>
+        </div>
+
+        <!-- 3. LAAGBEHEER (SEPARATE CANVAS LAYERS) -->
+        <div class="control-group">
+            <label>3. Actieve Overlay Lagen</label>
+            <div class="layer-toggle active">
+                <span>Laag 1: Kompas & HUD Bovenbalk</span>
+                <input type="checkbox" id="chk-layer-compass" checked>
+            </div>
+            <div class="layer-toggle active">
+                <span>Laag 2: Archeo Matrix & Reticle</span>
+                <input type="checkbox" id="chk-layer-matrix" checked>
+            </div>
+            <div class="layer-toggle active">
+                <span>Laag 3: Scilab 3D Matrix & Vectoren</span>
+                <input type="checkbox" id="chk-layer-scilab" checked>
+            </div>
+            <div class="layer-toggle active">
+                <span>Laag 4: Landmeting / Tacheometrie</span>
+                <input type="checkbox" id="chk-layer-survey" checked>
+            </div>
+            <div class="layer-toggle active">
+                <span>Laag 5: Zeemeting & Hydrografie</span>
+                <input type="checkbox" id="chk-layer-hydro" checked>
+            </div>
+            <div class="layer-toggle active">
+                <span>Laag 6: Gnomon Schaduwprojectie</span>
+                <input type="checkbox" id="chk-layer-shadow" checked>
+            </div>
+        </div>
+
+        <!-- 4. OPTISCHE FILTERS & ZOOM -->
+        <div class="control-group">
+            <label>4. Optische Filters & Lenszoom</label>
+            <select id="filter-selector">
+                <option value="filter-none">Standaard (Geen filter)</option>
+                <option value="filter-sun">☀️ Zonnefilter (High Contrast / Eclips)</option>
+                <option value="filter-moon">🌙 Maanfilter (Luminantie / Zilver)</option>
+                <option value="filter-night">🟢 Nachtzicht (IR / Lichtversterking)</option>
+            </select>
+            <label style="margin-top: 5px;">Digitale Zoom (<span id="zoom-val">1.0</span>x)</label>
+            <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1">
+        </div>
+
+        <!-- 5. CAPTURE & RECORDING -->
+        <div class="control-group">
+            <label>5. Snapshot & Opname (Gecombineerde Lagen)</label>
+            <div class="btn-grid">
+                <button id="btn-take-photo">📸 Foto Opslaan</button>
+                <button id="btn-record-video">🎥 Start Opname</button>
+            </div>
+            <div class="data-display" id="capture-status">Status: Stand-by</div>
+        </div>
+
+        <!-- 6. ARCHEOASTRONOMISCHE MATRIX (NL & ZWEDEN) -->
+        <div class="control-group">
+            <label>6. Archeo Matrix Nederland & Zweden</label>
+            <select id="target-selector">
+                <optgroup label="🇳🇱 Nederland Archeo Matrix">
+                    <option value="13.8" data-name="Orisant (13.8° Maan-As)">Orisant Maan-as (13.8°)</option>
+                    <option value="137.5" data-name="Nehalennia (137.5° Zonne-As)">Nehalennia Zonne-as (137.5°)</option>
+                    <option value="190.5" data-name="Doornik (Macro Schelde-As)">Doornik Macro-as (190.5°)</option>
+                    <option value="51.2" data-name="Hunebed D53 Havelte (Midzomer)">Hunebed D53 Havelte - Solstitium (51.2°)</option>
+                    <option value="231.5" data-name="Hunebed D27 Borger (Midwinter)">Hunebed D27 Borger - Winteras (231.5°)</option>
+                    <option value="87.0" data-name="Zonneweide Kootwijk (Equinox)">Kootwijk Cultusplaats (87.0°)</option>
+                </optgroup>
+                <optgroup label="🇸🇪 Zweden Archeo Matrix">
+                    <option value="134.0" data-name="Ales Stenar (Winterzonnewende)">Ales Stenar Scheepszetting (134.0°)</option>
+                    <option value="314.0" data-name="Ales Stenar (Zomerzonnewende)">Ales Stenar Zomeras (314.0°)</option>
+                    <option value="23.5" data-name="Anundshög Grafheuvels">Anundshög Gravencomplex (23.5°)</option>
+                    <option value="180.0" data-name="Gamla Uppsala Koningsheuvels">Gamla Uppsala Meridiaanas (180.0°)</option>
+                    <option value="62.3" data-name="Rösaring Rituele Weg">Rösaring Processieweg (62.3°)</option>
+                    <option value="208.5" data-name="Gångesteinen Rotstekeningen">Gångesteinen Kosmische As (208.5°)</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <!-- 7. TEMPORELE DEGRADATIE (MOERNEREN) -->
+        <div class="control-group">
+            <label>7. Tijdlijn & Bodemdaling (Moerneren)</label>
+            <input type="range" id="time-slider" min="1300" max="1600" value="1300" step="1">
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: #aaa;">
+                <span>1300</span>
+                <span id="year-display" style="color: var(--accent-orange); font-weight: bold; font-size: 13px;">1300</span>
+                <span>1600</span>
+            </div>
+            <div class="data-display" id="reimerswaal-status" style="margin-top: 8px;">JAAR: 1300
+Maaiveld Reimerswaal: +2.50m NAP
+(Veilig)</div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEWPORT MET GELAAGDE OVERLAYS -->
+    <div id="viewport">
+        <div id="feed-wrapper">
+            <video id="video-feed" autoplay playsinline muted></video>
+            
+            <!-- APARTE CANVAS LAGEN -->
+            <canvas id="layer-shadow" class="hud-layer"></canvas>
+            <canvas id="layer-hydro" class="hud-layer"></canvas>
+            <canvas id="layer-survey" class="hud-layer"></canvas>
+            <canvas id="layer-matrix" class="hud-layer"></canvas>
+            <canvas id="layer-scilab" class="hud-layer"></canvas>
+            <canvas id="layer-compass" class="hud-layer"></canvas>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGICA & LAYER MANAGEMENT -->
+    <script>
+        // === STATE & CONFIGURATIE ===
+        let actueleAzimut = 0.0; 
+        let isSerialConnected = false;
+        const CAMERA_FOV = 60;
+
+        // DOM Elementen
+        const viewport = document.getElementById('viewport');
+        const feedWrapper = document.getElementById('feed-wrapper');
+        const video = document.getElementById('video-feed');
+        const serialOutput = document.getElementById('serial-output');
+        const targetSelector = document.getElementById('target-selector');
+        const filterSelector = document.getElementById('filter-selector');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomVal = document.getElementById('zoom-val');
+        const captureStatus = document.getElementById('capture-status');
+
+        // Canvassen en Contexten
+        const layers = {
+            compass: { canvas: document.getElementById('layer-compass'), ctx: document.getElementById('layer-compass').getContext('2d'), chk: document.getElementById('chk-layer-compass') },
+            matrix:  { canvas: document.getElementById('layer-matrix'),  ctx: document.getElementById('layer-matrix').getContext('2d'),  chk: document.getElementById('chk-layer-matrix') },
+            scilab:  { canvas: document.getElementById('layer-scilab'),  ctx: document.getElementById('layer-scilab').getContext('2d'),  chk: document.getElementById('chk-layer-scilab') },
+            survey:  { canvas: document.getElementById('layer-survey'),  ctx: document.getElementById('layer-survey').getContext('2d'),  chk: document.getElementById('chk-layer-survey') },
+            hydro:   { canvas: document.getElementById('layer-hydro'),   ctx: document.getElementById('layer-hydro').getContext('2d'),   chk: document.getElementById('chk-layer-hydro') },
+            shadow:  { canvas: document.getElementById('layer-shadow'),  ctx: document.getElementById('layer-shadow').getContext('2d'),  chk: document.getElementById('chk-layer-shadow') }
+        };
+
+        // Canvas schalen over alle lagen
+        function resizeAllLayers() {
+            const w = viewport.clientWidth;
+            const h = viewport.clientHeight;
+            Object.values(layers).forEach(layer => {
+                layer.canvas.width = w;
+                layer.canvas.height = h;
+            });
+        }
+        window.addEventListener('resize', resizeAllLayers);
+        resizeAllLayers();
+
+        // Checkbox status styling triggers
+        Object.values(layers).forEach(layer => {
+            layer.chk.addEventListener('change', (e) => {
+                const parent = e.target.closest('.layer-toggle');
+                if (e.target.checked) {
+                    parent.classList.add('active');
+                } else {
+                    parent.classList.remove('active');
+                    layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+                }
+            });
+        });
+
+        // === 1. CAMERA & WEBRTC FEED ===
+        document.getElementById('btn-start-video').addEventListener('click', async (e) => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                video.srcObject = stream;
+                e.target.classList.add('active');
+                e.target.innerText = 'Livefeed Actief';
+            } catch (err) {
+                console.error("Camera fout:", err);
+                alert("Kon camera niet starten. Controleer camera-permissies.");
+            }
+        });
+
+        // === 2. SCHERM DELEN ===
+        document.getElementById('btn-share-screen').addEventListener('click', async (e) => {
+            try {
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" },
+                    audio: false
+                });
+                video.srcObject = screenStream;
+                e.target.classList.add('active');
+                e.target.innerText = 'Scherm Gedeeld';
+                screenStream.getVideoTracks()[0].onended = () => {
+                    e.target.classList.remove('active');
+                    e.target.innerText = 'Deel Scherm/Mobiel';
+                };
+            } catch (err) {
+                console.error("Schermdelen fout:", err);
+            }
+        });
+
+        // === 3. VOLLEDIG SCHERM & PIP ===
+        document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                viewport.requestFullscreen().catch(err => alert(`Fout: ${err.message}`));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.getElementById('btn-toggle-pip').addEventListener('click', async () => {
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else if (document.pictureInPictureEnabled) {
+                    await video.requestPictureInPicture();
+                }
+            } catch (err) {
+                console.error("PiP fout:", err);
+            }
+        });
+
+        // === 4. ZOOM & OPTISCHE FILTERS ===
+        zoomSlider.addEventListener('input', (e) => {
+            const zoom = parseFloat(e.target.value);
+            zoomVal.innerText = zoom.toFixed(1);
+            feedWrapper.style.transform = `scale(${zoom})`;
+        });
+
+        filterSelector.addEventListener('change', (e) => {
+            video.className = e.target.value;
+        });
+
+        // === 5. FOTO EN VIDEO OPNAME (SAMENVOEGEN VAN ALLE ACTIEVE LAGEN) ===
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        function getMergedLayersCanvas() {
+            const merged = document.createElement('canvas');
+            merged.width = viewport.clientWidth;
+            merged.height = viewport.clientHeight;
+            const mCtx = merged.getContext('2d');
+
+            if (video.videoWidth > 0) {
+                mCtx.filter = getComputedStyle(video).filter;
+                mCtx.drawImage(video, 0, 0, merged.width, merged.height);
+                mCtx.filter = 'none';
+            }
+
+            // Teken alle geactiveerde lagen op volgorde
+            const layerKeys = ['shadow', 'hydro', 'survey', 'matrix', 'scilab', 'compass'];
+            layerKeys.forEach(key => {
+                if (layers[key].chk.checked) {
+                    mCtx.drawImage(layers[key].canvas, 0, 0);
+                }
+            });
+
+            return merged;
+        }
+
+        document.getElementById('btn-take-photo').addEventListener('click', () => {
+            const merged = getMergedLayersCanvas();
+            const imageURL = merged.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `Archeo_MultiLayer_${Date.now()}.png`;
+            link.href = imageURL;
+            link.click();
+            captureStatus.innerText = "Status: Multi-layer Foto opgeslagen!";
+            setTimeout(() => captureStatus.innerText = "Status: Stand-by", 3000);
+        });
+
+        const btnRecord = document.getElementById('btn-record-video');
+        btnRecord.addEventListener('click', () => {
+            if (!isRecording) {
+                const merged = document.createElement('canvas');
+                merged.width = viewport.clientWidth;
+                merged.height = viewport.clientHeight;
+                const mCtx = merged.getContext('2d');
+
+                const stream = merged.captureStream(30);
+                function renderMergedStream() {
+                    if (video.videoWidth > 0) {
+                        mCtx.filter = getComputedStyle(video).filter;
+                        mCtx.drawImage(video, 0, 0, merged.width, merged.height);
+                        mCtx.filter = 'none';
+                    }
+                    const layerKeys = ['shadow', 'hydro', 'survey', 'matrix', 'scilab', 'compass'];
+                    layerKeys.forEach(key => {
+                        if (layers[key].chk.checked) {
+                            mCtx.drawImage(layers[key].canvas, 0, 0);
+                        }
+                    });
+                    if (isRecording) requestAnimationFrame(renderMergedStream);
+                }
+
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Archeo_MultiLayer_Video_${Date.now()}.webm`;
+                    a.click();
+                    captureStatus.innerText = "Status: Video gedownload!";
+                };
+
+                isRecording = true;
+                mediaRecorder.start();
+                renderMergedStream();
+
+                btnRecord.classList.add('danger');
+                btnRecord.innerText = "⏹ Stop Opname";
+                captureStatus.innerText = "Status: Video-opname loopt...";
+            } else {
+                isRecording = false;
+                mediaRecorder.stop();
+                btnRecord.classList.remove('danger');
+                btnRecord.innerText = "🎥 Start Opname";
+            }
+        });
+
+        // === 6. WEB SERIAL API (NMEA 0183) ===
+        document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
+            if (!("serial" in navigator)) {
+                alert("Web Serial API wordt niet ondersteund in deze browser. Gebruik Chrome of Edge.");
+                return;
+            }
+
+            try {
+                const baudRate = parseInt(document.getElementById('baud-rate').value);
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: baudRate });
+                
+                isSerialConnected = true;
+                e.target.classList.add('active');
+                e.target.innerText = 'Hardware Verbonden';
+
+                const textDecoder = new TextDecoderStream();
+                port.readable.pipeTo(textDecoder.writable);
+                const reader = textDecoder.readable.getReader();
+
+                let buffer = "";
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += value;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (let line of lines) {
+                        parseNMEA(line.trim());
+                    }
+                }
+            } catch (err) {
+                console.error("Serial Fout:", err);
+            }
+        });
+
+        function parseNMEA(sentence) {
+            if (sentence.startsWith('$')) {
+                const parts = sentence.split(',');
+                if (parts[0].endsWith('HDT') && parts[1]) {
+                    actueleAzimut = parseFloat(parts[1]);
+                    serialOutput.innerText = `[NMEA] Kompas Azimut: ${actueleAzimut.toFixed(1)}°\nRAW: ${sentence}`;
+                }
+            }
+        }
+
+        // === 7. TEMPORELE DEGRADATIE (MOERNEREN) ===
+        const timeSlider = document.getElementById('time-slider');
+        const yearDisplay = document.getElementById('year-display');
+        const reimerswaalStatus = document.getElementById('reimerswaal-status');
+
+        const startJaar = 1300;
+        const Z_start = 2.5; 
+        const dalingStart = 0.003; 
+        const groeiFactor = 1.018; 
+        const kritiekNiveau = 1.2; 
+
+        timeSlider.addEventListener('input', (e) => {
+            const huidigJaar = parseInt(e.target.value);
+            yearDisplay.innerText = huidigJaar;
+            
+            let huidigeZ = Z_start;
+            for(let i = 1; i <= (huidigJaar - startJaar); i++) {
+                huidigeZ -= (dalingStart * Math.pow(groeiFactor, i));
+            }
+
+            let statusText = `JAAR: ${huidigJaar}\nMaaiveld: ${huidigeZ > 0 ? '+' : ''}${huidigeZ.toFixed(2)}m NAP`;
+            
+            if (huidigJaar === 1530) {
+                statusText += `\n🚨 SINT-FELIXVLOED (4.2m)!\nWATERKOLOM: ${(4.2 - huidigeZ).toFixed(2)}m`;
+                reimerswaalStatus.style.color = '#ff4444'; 
+            } else if (huidigJaar === 1532) {
+                statusText += `\n🚨 ALLERHEILIGENVLOED (4.5m)!\nWATERKOLOM: ${(4.5 - huidigeZ).toFixed(2)}m`;
+                reimerswaalStatus.style.color = '#ff4444'; 
+            } else if (huidigeZ < kritiekNiveau) {
+                statusText += `\n⚠️ KRITIEK: ONDER HOOGWATER NIVEAU`;
+                reimerswaalStatus.style.color = '#ff9900'; 
+            } else {
+                reimerswaalStatus.style.color = '#4ade80'; 
+            }
+            
+            reimerswaalStatus.innerText = statusText;
+        });
+
+        // === 8. GELAAGDE RENDER ENGINE ===
+        function drawAllLayers() {
+            const w = viewport.clientWidth;
+            const h = viewport.clientHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            if (!isSerialConnected) {
+                actueleAzimut = (actueleAzimut + 0.03) % 360;
+                serialOutput.innerText = `[SIMULATIE] Azimut: ${actueleAzimut.toFixed(1)}°\nVerbind hardware voor live data.`;
+            }
+
+            // --- LAAG 1: KOMPAS BOVENBALK ---
+            if (layers.compass.chk.checked) {
+                const cCtx = layers.compass.ctx;
+                cCtx.clearRect(0, 0, w, h);
+                cCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+                cCtx.fillRect(cx - 60, 15, 120, 35);
+                cCtx.fillStyle = '#fff';
+                cCtx.font = 'bold 18px Arial';
+                cCtx.textAlign = 'center';
+                cCtx.fillText(`${actueleAzimut.toFixed(1)}°`, cx, 39);
+                cCtx.textAlign = 'left';
+            }
+
+            // --- LAAG 2: ARCHEO MATRIX & RETICLE ---
+            if (layers.matrix.chk.checked) {
+                const mCtx = layers.matrix.ctx;
+                mCtx.clearRect(0, 0, w, h);
+
+                const targetAzimut = parseFloat(targetSelector.value);
+                const targetName = targetSelector.options[targetSelector.selectedIndex].dataset.name;
+
+                let deltaHoek = targetAzimut - actueleAzimut;
+                if (deltaHoek > 180) deltaHoek -= 360;
+                if (deltaHoek < -180) deltaHoek += 360;
+
+                if (Math.abs(deltaHoek) <= CAMERA_FOV / 2) {
+                    const pixelsPerGraad = w / CAMERA_FOV;
+                    const xPos = cx + (deltaHoek * pixelsPerGraad);
+
+                    // Matrix Aslijn
+                    mCtx.beginPath();
+                    mCtx.moveTo(xPos, 0);
+                    mCtx.lineTo(xPos, h);
+                    mCtx.strokeStyle = 'rgba(138, 43, 226, 0.85)';
+                    mCtx.lineWidth = 3;
+                    mCtx.setLineDash([15, 10]);
+                    mCtx.stroke();
+
+                    // Richtkruis (Reticle)
+                    mCtx.beginPath();
+                    mCtx.arc(xPos, cy, 32, 0, 2 * Math.PI);
+                    mCtx.strokeStyle = 'rgba(255, 107, 74, 1)';
+                    mCtx.setLineDash([]);
+                    mCtx.stroke();
+
+                    mCtx.beginPath();
+                    mCtx.moveTo(xPos - 45, cy);
+                    mCtx.lineTo(xPos + 45, cy);
+                    mCtx.moveTo(xPos, cy - 45);
+                    mCtx.lineTo(xPos, cy + 45);
+                    mCtx.lineWidth = 2;
+                    mCtx.stroke();
+
+                    // Doelinformatie Card
+                    mCtx.fillStyle = 'rgba(30, 30, 36, 0.9)';
+                    mCtx.fillRect(xPos + 40, cy - 30, 270, 68);
+                    mCtx.strokeStyle = 'rgba(255, 107, 74, 0.6)';
+                    mCtx.strokeRect(xPos + 40, cy - 30, 270, 68);
+                    
+                    mCtx.fillStyle = '#4ade80'; 
+                    mCtx.font = 'bold 13px "Courier New"';
+                    mCtx.fillText(`TARGET: ${targetName}`, xPos + 50, cy - 10);
+                    mCtx.fillStyle = '#fff';
+                    mCtx.fillText(`AZIMUT: ${targetAzimut.toFixed(1)}°`, xPos + 50, cy + 10);
+                    mCtx.fillText(`OFFSET: ${Math.abs(deltaHoek).toFixed(1)}°`, xPos + 50, cy + 26);
+                }
+            }
+
+            // --- LAAG 3: SCILAB 3D PROJECTION MATRIX ---
+            if (layers.scilab.chk.checked) {
+                const sCtx = layers.scilab.ctx;
+                sCtx.clearRect(0, 0, w, h);
+
+                sCtx.fillStyle = 'rgba(15, 16, 22, 0.85)';
+                sCtx.fillRect(20, 20, 240, 100);
+                sCtx.strokeStyle = 'var(--accent-purple)';
+                sCtx.strokeRect(20, 20, 240, 100);
+
+                sCtx.fillStyle = 'var(--accent-purple)';
+                sCtx.font = 'bold 11px "Courier New"';
+                sCtx.fillText(`SCILAB ROTATIE MATRIX R_z`, 28, 38);
+
+                const rad = actueleAzimut * (Math.PI / 180);
+                const r00 = Math.cos(rad).toFixed(2);
+                const r01 = (-Math.sin(rad)).toFixed(2);
+                const r10 = Math.sin(rad).toFixed(2);
+                const r11 = Math.cos(rad).toFixed(2);
+
+                sCtx.fillStyle = '#aaa';
+                sCtx.font = '10px "Courier New"';
+                sCtx.fillText(`[  ${r00}  ${r01}   0.00 ]`, 28, 58);
+                sCtx.fillText(`[  ${r10}  ${r11}   0.00 ]`, 28, 72);
+                sCtx.fillText(`[  0.00   0.00   1.00 ]`, 28, 86);
+                sCtx.fillStyle = 'var(--accent-green)';
+                sCtx.fillText(`det(R) = 1.000 | FOV = ${CAMERA_FOV}°`, 28, 108);
+            }
+
+            // --- LAAG 4: TACHEOMETRIE / LANDMETING (VIZIERKRUIS & STADIA) ---
+            if (layers.survey.chk.checked) {
+                const svCtx = layers.survey.ctx;
+                svCtx.clearRect(0, 0, w, h);
+
+                svCtx.strokeStyle = 'rgba(0, 245, 212, 0.65)';
+                svCtx.lineWidth = 1.5;
+
+                // Hoofdvizier
+                svCtx.beginPath();
+                svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
+                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
+                svCtx.stroke();
+
+                // Stadiadraden (Optische Afstandsbepaling)
+                svCtx.beginPath();
+                svCtx.moveTo(cx - 20, cy - 25); svCtx.lineTo(cx + 20, cy - 25);
+                svCtx.moveTo(cx - 20, cy + 25); svCtx.lineTo(cx + 20, cy + 25);
+                svCtx.stroke();
+
+                svCtx.beginPath();
+                svCtx.arc(cx, cy, 100, 0, 2 * Math.PI);
+                svCtx.strokeStyle = 'rgba(0, 245, 212, 0.2)';
+                svCtx.stroke();
+            }
+
+            // --- LAAG 5: ZEEMETING & HYDROGRAFIE (WATERLIJN & GETIJDE) ---
+            if (layers.hydro.chk.checked) {
+                const hCtx = layers.hydro.ctx;
+                hCtx.clearRect(0, 0, w, h);
+
+                const waterY = h - 35;
+                hCtx.fillStyle = 'rgba(0, 187, 249, 0.2)';
+                hCtx.fillRect(0, waterY, w, 35);
+                hCtx.strokeStyle = 'var(--accent-blue)';
+                hCtx.lineWidth = 2;
+                hCtx.beginPath();
+                hCtx.moveTo(0, waterY);
+                hCtx.lineTo(w, waterY);
+                hCtx.stroke();
+
+                hCtx.fillStyle = 'var(--accent-blue)';
+                hCtx.font = 'bold 11px "Courier New"';
+                hCtx.fillText(`🌊 HYDROGRAFISCH NIVEAU: LAT REDUCTIE ACTIEF`, 20, waterY + 22);
+            }
+
+            // --- LAAG 6: GNOMON SCHADUWPROJECTIE ---
+            if (layers.shadow.chk.checked) {
+                const shCtx = layers.shadow.ctx;
+                shCtx.clearRect(0, 0, w, h);
+
+                // Vereenvoudigde zonnepositie as
+                const shadowAzimut = (180.0 + 45.0) % 360; // Gesimuleerde zonne-as
+                let deltaShadow = shadowAzimut - actueleAzimut;
+                if (deltaShadow > 180) deltaShadow -= 360;
+                if (deltaShadow < -180) deltaShadow += 360;
+
+                if (Math.abs(deltaShadow) <= CAMERA_FOV / 2) {
+                    const xShadow = cx + (deltaShadow * (w / CAMERA_FOV));
+
+                    shCtx.beginPath();
+                    shCtx.moveTo(xShadow, cy);
+                    shCtx.lineTo(xShadow - 40, h);
+                    shCtx.lineTo(xShadow + 40, h);
+                    shCtx.closePath();
+                    shCtx.fillStyle = 'rgba(254, 228, 64, 0.15)';
+                    shCtx.fill();
+
+                    shCtx.beginPath();
+                    shCtx.moveTo(xShadow, cy);
+                    shCtx.lineTo(xShadow, h);
+                    shCtx.strokeStyle = 'var(--accent-yellow)';
+                    shCtx.lineWidth = 2;
+                    shCtx.setLineDash([8, 6]);
+                    shCtx.stroke();
+                    shCtx.setLineDash([]);
+                }
+            }
+
+            requestAnimationFrame(drawAllLayers);
+        }
+
+        // Start gelaagde render loop
+        drawAllLayers();
+    </script>
+</body>
+</html>
