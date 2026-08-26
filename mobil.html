@@ -157,6 +157,7 @@
             height: 100%;
             transform-origin: center center;
             transition: transform 0.05s ease-out;
+            will-change: transform;
         }
 
         #video-feed {
@@ -167,6 +168,8 @@
             height: 100%;
             object-fit: cover;
             z-index: 1;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
         }
 
         .hud-layer {
@@ -186,10 +189,11 @@
         #layer-scilab   { z-index: 6; }
         #layer-compass  { z-index: 7; }
 
-        .filter-none { filter: none; }
-        .filter-sun { filter: contrast(220%) brightness(85%) sepia(80%) hue-rotate(-20deg) saturate(300%); }
-        .filter-moon { filter: contrast(160%) brightness(120%) hue-rotate(180deg) saturate(40%); }
-        .filter-night { filter: brightness(140%) contrast(180%) tint(green) invert(10%) sepia(100%) hue-rotate(80deg) saturate(400%); }
+        /* Optische Filters met adaptieve verscherping */
+        .filter-none { filter: contrast(110%) brightness(102%); }
+        .filter-sun { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
+        .filter-moon { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
+        .filter-night { filter: brightness(145%) contrast(200%) tint(green) invert(10%) sepia(100%) hue-rotate(80deg) saturate(450%); }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -216,7 +220,7 @@
             </div>
         </div>
 
-        <!-- 2. SENSOREN, KOMPAS & AZIMUT RICHTINGEN (ERONDER) -->
+        <!-- 2. SENSOREN & KOMPAS STURING (ERONDER) -->
         <div class="control-group">
             <label>2. Sensoren & Kompas Sturing</label>
             <button id="btn-enable-sensor">📱 Activeer Sensor</button>
@@ -263,7 +267,7 @@
             </div>
         </div>
 
-        <!-- 4. LIDAR SCANS MET AAN/UIT SCHAKELAAR & METINGEN -->
+        <!-- 4. LIDAR SCANS & HISTORISCHE MATEN -->
         <div class="control-group">
             <label>4. LiDAR Engine & Historische Maten</label>
             <button id="btn-toggle-lidar-state" class="active">⚡ LiDAR: AAN</button>
@@ -292,19 +296,23 @@
             <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
-        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X -->
+        <!-- 5. OPTISCHE FILTERS & SHARP-ZOOM TOT 1500X -->
         <div class="control-group">
-            <label>5. Filters & Lenszoom (tot 1500x)</label>
+            <label>5. Filters & Sharp-Zoom (tot 1500x)</label>
             <select id="filter-selector">
-                <option value="filter-none">Standaard</option>
+                <option value="filter-none">Standaard (Scherpte Boost)</option>
                 <option value="filter-sun">☀️ Zonnefilter</option>
                 <option value="filter-moon">🌙 Maanfilter</option>
                 <option value="filter-night">🟢 Nachtzicht</option>
             </select>
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x</span>
+                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x (HD)</span>
             </div>
             <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="1">
+            <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+                <input type="checkbox" id="chk-auto-sharpness" checked style="width:auto; margin:0;">
+                <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur & Unsharp Mask</label>
+            </div>
         </div>
 
         <!-- 6. CAPTURE & RECORDING -->
@@ -321,7 +329,7 @@
     <!-- MAIN VIEWPORT -->
     <div id="viewport">
         <div id="feed-wrapper">
-            <video id="video-feed" autoplay playsinline muted></video>
+            <video id="video-feed" class="filter-none" autoplay playsinline muted></video>
             
             <canvas id="layer-lidar" class="hud-layer"></canvas>
             <canvas id="layer-shadow" class="hud-layer"></canvas>
@@ -342,6 +350,8 @@
 
         let cameraStream = null;
         let screenStream = null;
+        let videoTrack = null;
+        let cameraCapabilities = null;
 
         const viewport = document.getElementById('viewport');
         const feedWrapper = document.getElementById('feed-wrapper');
@@ -354,6 +364,7 @@
         const filterSelector = document.getElementById('filter-selector');
         const zoomSlider = document.getElementById('zoom-slider');
         const zoomVal = document.getElementById('zoom-val');
+        const chkAutoSharpness = document.getElementById('chk-auto-sharpness');
         const captureStatus = document.getElementById('capture-status');
         const btnToggleCamera = document.getElementById('btn-toggle-camera');
         const btnToggleScreen = document.getElementById('btn-toggle-screen');
@@ -385,12 +396,21 @@
             gunter_chain:    { factor: 20.1168, name: "Gunter Ketting", code: "CHN" }
         };
 
+        // Supersampling & Canvas DPI Schaling voor maximale scherpte
         function resizeAllLayers() {
+            const dpr = window.devicePixelRatio || 1;
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
+
             Object.values(layers).forEach(l => {
-                l.canvas.width = w;
-                l.canvas.height = h;
+                l.canvas.width = w * dpr;
+                l.canvas.height = h * dpr;
+                l.canvas.style.width = `${w}px`;
+                l.canvas.style.height = `${h}px`;
+                l.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                l.ctx.scale(dpr, dpr);
+                l.ctx.imageSmoothingEnabled = true;
+                l.ctx.imageSmoothingQuality = 'high';
             });
         }
         window.addEventListener('resize', resizeAllLayers);
@@ -403,16 +423,20 @@
                     parent.classList.add('active');
                 } else {
                     parent.classList.remove('active');
-                    layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+                    const w = viewport.clientWidth;
+                    const h = viewport.clientHeight;
+                    layer.ctx.clearRect(0, 0, w, h);
                 }
             });
         });
 
-        // === 1. LIVEFEED STREAMS ===
+        // === 1. LIVEFEED MET MAX RESOLUTIE (4K/HD) EN HARDWARE ZOOM CAPABILITIES ===
         function stopCamera() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
                 cameraStream = null;
+                videoTrack = null;
+                cameraCapabilities = null;
             }
             if (video.srcObject && !screenStream) video.srcObject = null;
             btnToggleCamera.classList.remove('danger');
@@ -425,12 +449,26 @@
             } else {
                 try {
                     if (screenStream) stopScreenShare();
+                    
+                    // Vraag maximale sensorresolutie op voor optimale scherpte
                     cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                        video: { 
+                            facingMode: "environment", 
+                            width: { ideal: 3840, min: 1920 }, 
+                            height: { ideal: 2160, min: 1080 },
+                            focusMode: { ideal: "continuous" }
+                        } 
                     });
+
                     video.srcObject = cameraStream;
+                    videoTrack = cameraStream.getVideoTracks()[0];
+                    if (videoTrack.getCapabilities) {
+                        cameraCapabilities = videoTrack.getCapabilities();
+                    }
+
                     btnToggleCamera.classList.add('danger');
                     btnToggleCamera.innerText = 'Stop Cam';
+                    applySharpZoom();
                 } catch (err) { alert("Camera fout: " + err.message); }
             }
         });
@@ -451,7 +489,7 @@
             } else {
                 try {
                     if (cameraStream) stopCamera();
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60 }, audio: false });
                     video.srcObject = screenStream;
                     btnToggleScreen.classList.add('danger');
                     btnToggleScreen.innerText = 'Stop Deel';
@@ -460,7 +498,7 @@
             }
         });
 
-        // === 2. SENSOREN & KOMPAS DRAAIEN (NOORD / ZUID) ===
+        // === 2. SENSOREN & KOMPAS STURING ===
         btnSnapNorth.addEventListener('click', () => {
             isMobileSensorActive = false;
             actueleAzimut = 0.0;
@@ -541,7 +579,45 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 3. LIDAR AAN/UIT & BEREKENINGEN ===
+        // === 3. ADAPTIEVE SHARP-ZOOM ENGINE (HARDWARE + UNSHARP FILTER) ===
+        function applySharpZoom() {
+            const z = parseFloat(zoomSlider.value);
+            zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)';
+
+            // Stap A: Hardware sensor zoom toepassen indien ondersteund door hardware lens
+            if (videoTrack && cameraCapabilities && cameraCapabilities.zoom) {
+                const hwMin = cameraCapabilities.zoom.min;
+                const hwMax = cameraCapabilities.zoom.max;
+                const targetHwZoom = Math.min(hwMax, Math.max(hwMin, z));
+                videoTrack.applyConstraints({ advanced: [{ zoom: targetHwZoom }] }).catch(() => {});
+            }
+
+            // Stap B: Software CSS viewport zoom met interpolatiebeheer
+            feedWrapper.style.transform = `scale(${z})`;
+
+            // Stap C: Unsharp mask & contrast compensatie bij diepe vergroting
+            if (chkAutoSharpness.checked) {
+                if (z > 1.5) {
+                    const contrastBoost = Math.min(180, 110 + (Math.log10(z) * 25));
+                    const brightnessComp = Math.min(115, 102 + (Math.log10(z) * 4));
+                    video.style.filter = `contrast(${contrastBoost}%) brightness(${brightnessComp}%)`;
+                    video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
+                } else {
+                    video.style.filter = '';
+                    video.style.imageRendering = 'crisp-edges';
+                }
+            }
+        }
+
+        zoomSlider.addEventListener('input', applySharpZoom);
+        chkAutoSharpness.addEventListener('change', applySharpZoom);
+
+        filterSelector.addEventListener('change', (e) => {
+            video.className = e.target.value;
+            applySharpZoom();
+        });
+
+        // === 4. LIDAR AAN/UIT & METINGEN ===
         btnToggleLidarState.addEventListener('click', () => {
             isLidarActive = !isLidarActive;
             if (isLidarActive) {
@@ -552,7 +628,9 @@
                 btnToggleLidarState.classList.remove('active');
                 btnToggleLidarState.classList.add('danger');
                 btnToggleLidarState.innerText = '⭕ LiDAR: UIT';
-                layers.lidar.ctx.clearRect(0, 0, layers.lidar.canvas.width, layers.lidar.canvas.height);
+                const w = viewport.clientWidth;
+                const h = viewport.clientHeight;
+                layers.lidar.ctx.clearRect(0, 0, w, h);
             }
             updateLidarMetrics();
         });
@@ -575,7 +653,7 @@
         geoUnitSelector.addEventListener('change', updateLidarMetrics);
         updateLidarMetrics();
 
-        // === 4. ZOOM, FILTERS & VIEWPORT ===
+        // === 5. OPNAME & FOTO ===
         document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
             else document.exitFullscreen();
@@ -588,20 +666,13 @@
             } catch (err) { console.error(err); }
         });
 
-        zoomSlider.addEventListener('input', (e) => {
-            const z = parseFloat(e.target.value);
-            zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x' : z.toFixed(1) + 'x';
-            feedWrapper.style.transform = `scale(${z})`;
-        });
-
-        filterSelector.addEventListener('change', (e) => { video.className = e.target.value; });
-
-        // === 5. OPNAME & FOTO ===
         function getMergedLayersCanvas() {
             const merged = document.createElement('canvas');
-            merged.width = viewport.clientWidth;
-            merged.height = viewport.clientHeight;
+            merged.width = viewport.clientWidth * (window.devicePixelRatio || 1);
+            merged.height = viewport.clientHeight * (window.devicePixelRatio || 1);
             const mCtx = merged.getContext('2d');
+            mCtx.imageSmoothingEnabled = true;
+            mCtx.imageSmoothingQuality = 'high';
 
             if (video.videoWidth > 0 && video.srcObject) {
                 mCtx.filter = getComputedStyle(video).filter;
@@ -619,10 +690,10 @@
         document.getElementById('btn-take-photo').addEventListener('click', () => {
             const merged = getMergedLayersCanvas();
             const link = document.createElement('a');
-            link.download = `LiDAR_Survey_${Date.now()}.png`;
+            link.download = `LiDAR_Sharp_Survey_${Date.now()}.png`;
             link.href = merged.toDataURL('image/png');
             link.click();
-            captureStatus.innerText = "Foto opgeslagen!";
+            captureStatus.innerText = "Foto opgeslagen (HD)!";
             setTimeout(() => captureStatus.innerText = "Stand-by", 2500);
         });
 
@@ -643,7 +714,7 @@
                         mCtx.filter = 'none';
                     }
                     ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'].forEach(k => {
-                        if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
+                        if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0, merged.width, merged.height);
                     });
                     if (isRecording) requestAnimationFrame(renderMergedStream);
                 }
@@ -750,7 +821,7 @@
                 cCtx.textAlign = 'left';
             }
 
-            // --- LAAG 2: LIDAR POINTCLOUD & METINGEN (ALS INGESCHAKELD) ---
+            // --- LAAG 2: LIDAR POINTCLOUD (INCLUSIEF SUBPIXEL RENDERING) ---
             if (layers.lidar.chk.checked && isLidarActive) {
                 const lCtx = layers.lidar.ctx;
                 lCtx.clearRect(0, 0, w, h);
@@ -832,7 +903,7 @@
                 sCtx.fillText(`det=1.00 | FOV=${CAMERA_FOV}°`, 22, 146);
             }
 
-            // --- LAAG 4: LANDMETINGEN (ROEDEN / KETTING) ---
+            // --- LAAG 4: LANDMETINGEN ---
             if (layers.survey.chk.checked) {
                 const svCtx = layers.survey.ctx;
                 svCtx.clearRect(0, 0, w, h);
@@ -855,7 +926,7 @@
                 svCtx.fillText(`📐 LANDMEETKRUIS: RIJNLAND & GUNTER METING`, 15, h - 50);
             }
 
-            // --- LAAG 5: ZEEMETINGEN (HISTORISCHE ZEEMIJLEN & VADEMEN) ---
+            // --- LAAG 5: ZEEMETINGEN ---
             if (layers.hydro.chk.checked) {
                 const hCtx = layers.hydro.ctx;
                 hCtx.clearRect(0, 0, w, h);
