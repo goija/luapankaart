@@ -189,7 +189,6 @@
         #layer-scilab   { z-index: 6; }
         #layer-compass  { z-index: 7; }
 
-        /* Optische Filters met adaptieve verscherping */
         .filter-none { filter: contrast(110%) brightness(102%); }
         .filter-sun { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
         .filter-moon { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
@@ -296,7 +295,7 @@
             <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
-        <!-- 5. OPTISCHE FILTERS & SHARP-ZOOM TOT 1500X -->
+        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X -->
         <div class="control-group">
             <label>5. Filters & Sharp-Zoom (tot 1500x)</label>
             <select id="filter-selector">
@@ -345,6 +344,7 @@
         let actueleAzimut = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
+        let isManualLock = false; // Vergrendeling voor vaste Noord/Zuid oriëntatie
         let isLidarActive = true;
         const CAMERA_FOV = 60;
 
@@ -396,7 +396,6 @@
             gunter_chain:    { factor: 20.1168, name: "Gunter Ketting", code: "CHN" }
         };
 
-        // Supersampling & Canvas DPI Schaling voor maximale scherpte
         function resizeAllLayers() {
             const dpr = window.devicePixelRatio || 1;
             const w = viewport.clientWidth;
@@ -430,7 +429,7 @@
             });
         });
 
-        // === 1. LIVEFEED MET MAX RESOLUTIE (4K/HD) EN HARDWARE ZOOM CAPABILITIES ===
+        // === 1. LIVEFEED STREAMS ===
         function stopCamera() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
@@ -449,22 +448,16 @@
             } else {
                 try {
                     if (screenStream) stopScreenShare();
-                    
-                    // Vraag maximale sensorresolutie op voor optimale scherpte
                     cameraStream = await navigator.mediaDevices.getUserMedia({ 
                         video: { 
                             facingMode: "environment", 
                             width: { ideal: 3840, min: 1920 }, 
-                            height: { ideal: 2160, min: 1080 },
-                            focusMode: { ideal: "continuous" }
+                            height: { ideal: 2160, min: 1080 }
                         } 
                     });
-
                     video.srcObject = cameraStream;
                     videoTrack = cameraStream.getVideoTracks()[0];
-                    if (videoTrack.getCapabilities) {
-                        cameraCapabilities = videoTrack.getCapabilities();
-                    }
+                    if (videoTrack.getCapabilities) cameraCapabilities = videoTrack.getCapabilities();
 
                     btnToggleCamera.classList.add('danger');
                     btnToggleCamera.innerText = 'Stop Cam';
@@ -498,20 +491,32 @@
             }
         });
 
-        // === 2. SENSOREN & KOMPAS STURING ===
+        // === 2. SENSOREN & KOMPAS NAAR NOORD / ZUID FIX ===
         btnSnapNorth.addEventListener('click', () => {
+            isManualLock = true;
             isMobileSensorActive = false;
             actueleAzimut = 0.0;
+            btnEnableSensor.classList.remove('active');
+            btnEnableSensor.innerText = '📱 Activeer Sensor';
+            btnSnapNorth.classList.add('active');
+            btnSnapSouth.classList.remove('active');
             serialOutput.innerText = `[Kompas] Vastgezet op Noord: 0.0°`;
         });
 
         btnSnapSouth.addEventListener('click', () => {
+            isManualLock = true;
             isMobileSensorActive = false;
             actueleAzimut = 180.0;
+            btnEnableSensor.classList.remove('active');
+            btnEnableSensor.innerText = '📱 Activeer Sensor';
+            btnSnapSouth.classList.add('active');
+            btnSnapNorth.classList.remove('active');
             serialOutput.innerText = `[Kompas] Vastgezet op Zuid: 180.0°`;
         });
 
         function handleOrientation(event) {
+            if (isManualLock) return; // Negeer bewegingsdata bij handmatige Noord/Zuid fix
+
             let heading = null;
             if (event.webkitCompassHeading !== undefined) {
                 heading = event.webkitCompassHeading;
@@ -527,6 +532,10 @@
         }
 
         btnEnableSensor.addEventListener('click', async () => {
+            isManualLock = false;
+            btnSnapNorth.classList.remove('active');
+            btnSnapSouth.classList.remove('active');
+
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const response = await DeviceOrientationEvent.requestPermission();
@@ -544,17 +553,13 @@
             }
         });
 
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.addEventListener('deviceorientation', handleOrientation, true);
-        }
-
         document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
             if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
             try {
                 const port = await navigator.serial.requestPort();
                 await port.open({ baudRate: parseInt(document.getElementById('baud-rate').value) });
                 isSerialConnected = true;
+                isManualLock = false;
                 e.target.classList.add('active');
                 const decoder = new TextDecoderStream();
                 port.readable.pipeTo(decoder.writable);
@@ -579,12 +584,11 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 3. ADAPTIEVE SHARP-ZOOM ENGINE (HARDWARE + UNSHARP FILTER) ===
+        // === 3. ADAPTIEVE SHARP-ZOOM ENGINE ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
             zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)';
 
-            // Stap A: Hardware sensor zoom toepassen indien ondersteund door hardware lens
             if (videoTrack && cameraCapabilities && cameraCapabilities.zoom) {
                 const hwMin = cameraCapabilities.zoom.min;
                 const hwMax = cameraCapabilities.zoom.max;
@@ -592,10 +596,8 @@
                 videoTrack.applyConstraints({ advanced: [{ zoom: targetHwZoom }] }).catch(() => {});
             }
 
-            // Stap B: Software CSS viewport zoom met interpolatiebeheer
             feedWrapper.style.transform = `scale(${z})`;
 
-            // Stap C: Unsharp mask & contrast compensatie bij diepe vergroting
             if (chkAutoSharpness.checked) {
                 if (z > 1.5) {
                     const contrastBoost = Math.min(180, 110 + (Math.log10(z) * 25));
@@ -611,7 +613,6 @@
 
         zoomSlider.addEventListener('input', applySharpZoom);
         chkAutoSharpness.addEventListener('change', applySharpZoom);
-
         filterSelector.addEventListener('change', (e) => {
             video.className = e.target.value;
             applySharpZoom();
@@ -714,7 +715,7 @@
                         mCtx.filter = 'none';
                     }
                     ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'].forEach(k => {
-                        if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0, merged.width, merged.height);
+                        if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
                     });
                     if (isRecording) requestAnimationFrame(renderMergedStream);
                 }
@@ -752,7 +753,8 @@
             const cx = w / 2;
             const cy = h / 2;
 
-            if (!isSerialConnected && !isMobileSensorActive) {
+            // Alleen simulatie laten draaien als er GEEN handmatige vergrendeling of actieve sensor is
+            if (!isSerialConnected && !isMobileSensorActive && !isManualLock) {
                 actueleAzimut = (actueleAzimut + 0.03) % 360;
             }
 
@@ -821,7 +823,7 @@
                 cCtx.textAlign = 'left';
             }
 
-            // --- LAAG 2: LIDAR POINTCLOUD (INCLUSIEF SUBPIXEL RENDERING) ---
+            // --- LAAG 2: LIDAR POINTCLOUD & METINGEN ---
             if (layers.lidar.chk.checked && isLidarActive) {
                 const lCtx = layers.lidar.ctx;
                 lCtx.clearRect(0, 0, w, h);
@@ -913,7 +915,7 @@
 
                 svCtx.beginPath();
                 svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
-                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
+                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx + 50, cy);
                 svCtx.stroke();
 
                 svCtx.beginPath();
