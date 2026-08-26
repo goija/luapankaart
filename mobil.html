@@ -219,13 +219,13 @@
             </div>
         </div>
 
-        <!-- 2. SENSOREN & KOMPAS STURING (ERONDER) -->
+        <!-- 2. SENSOREN & DYNAMISCHE KALIBRATIE (ERONDER) -->
         <div class="control-group">
-            <label>2. Sensoren & Kompas Sturing</label>
+            <label>2. Sensoren & Kalibratie</label>
             <button id="btn-enable-sensor">📱 Activeer Sensor</button>
             <div class="btn-grid">
-                <button id="btn-snap-north">⬆ Naar Noord (0°)</button>
-                <button id="btn-snap-south">⬇ Naar Zuid (180°)</button>
+                <button id="btn-snap-north">⬆ Kalibreer Noord (0°)</button>
+                <button id="btn-snap-south">⬇ Kalibreer Zuid (180°)</button>
             </div>
             <select id="baud-rate">
                 <option value="4800">4800 Baud</option>
@@ -234,7 +234,7 @@
                 <option value="115200">115200 Baud</option>
             </select>
             <button id="btn-connect-serial">Serial API</button>
-            <div class="data-display" id="serial-output">Sensor: Auto (Sim)</div>
+            <div class="data-display" id="serial-output">Sensor: Stand-by</div>
         </div>
 
         <!-- 3. LAAGBEHEER -->
@@ -342,9 +342,10 @@
     <script>
         // === STATE ENGINE & CONFIGURATIE ===
         let actueleAzimut = 0.0;
+        let sensorOffset = 0.0;          // Offset voor dynamische kalibratie
+        let lastRawHeading = 0.0;        // Ongefilterde hardwarehoek
         let isSerialConnected = false;
         let isMobileSensorActive = false;
-        let isManualLock = false; // Vergrendeling voor vaste Noord/Zuid oriëntatie
         let isLidarActive = true;
         const CAMERA_FOV = 60;
 
@@ -491,32 +492,8 @@
             }
         });
 
-        // === 2. SENSOREN & KOMPAS NAAR NOORD / ZUID FIX ===
-        btnSnapNorth.addEventListener('click', () => {
-            isManualLock = true;
-            isMobileSensorActive = false;
-            actueleAzimut = 0.0;
-            btnEnableSensor.classList.remove('active');
-            btnEnableSensor.innerText = '📱 Activeer Sensor';
-            btnSnapNorth.classList.add('active');
-            btnSnapSouth.classList.remove('active');
-            serialOutput.innerText = `[Kompas] Vastgezet op Noord: 0.0°`;
-        });
-
-        btnSnapSouth.addEventListener('click', () => {
-            isManualLock = true;
-            isMobileSensorActive = false;
-            actueleAzimut = 180.0;
-            btnEnableSensor.classList.remove('active');
-            btnEnableSensor.innerText = '📱 Activeer Sensor';
-            btnSnapSouth.classList.add('active');
-            btnSnapNorth.classList.remove('active');
-            serialOutput.innerText = `[Kompas] Vastgezet op Zuid: 180.0°`;
-        });
-
+        // === 2. SENSOREN & DYNAMISCHE NOORD / ZUID KALIBRATIE ===
         function handleOrientation(event) {
-            if (isManualLock) return; // Negeer bewegingsdata bij handmatige Noord/Zuid fix
-
             let heading = null;
             if (event.webkitCompassHeading !== undefined) {
                 heading = event.webkitCompassHeading;
@@ -525,17 +502,15 @@
             }
 
             if (heading !== null && !isNaN(heading)) {
-                actueleAzimut = (heading + 360) % 360;
+                lastRawHeading = (heading + 360) % 360;
+                // Pas dynamische sensorOffset toe en blijf actief meedraaien
+                actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
                 isMobileSensorActive = true;
-                serialOutput.innerText = `[Mobiel] Sensor: ${actueleAzimut.toFixed(1)}°`;
+                serialOutput.innerText = `[Live Sensor] Azimut: ${actueleAzimut.toFixed(1)}° (Offset: ${sensorOffset.toFixed(0)}°)`;
             }
         }
 
-        btnEnableSensor.addEventListener('click', async () => {
-            isManualLock = false;
-            btnSnapNorth.classList.remove('active');
-            btnSnapSouth.classList.remove('active');
-
+        async function initSensor() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const response = await DeviceOrientationEvent.requestPermission();
@@ -543,15 +518,51 @@
                         window.addEventListener('deviceorientation', handleOrientation, true);
                         btnEnableSensor.classList.add('active');
                         btnEnableSensor.innerText = '📱 Sensor Actief';
+                        return true;
                     }
-                } catch (e) { alert('Sensor fout: ' + e.message); }
+                } catch (e) { console.error(e); }
             } else {
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 btnEnableSensor.classList.add('active');
                 btnEnableSensor.innerText = '📱 Sensor Actief';
+                return true;
             }
+            return false;
+        }
+
+        btnEnableSensor.addEventListener('click', async () => {
+            sensorOffset = 0.0;
+            btnSnapNorth.classList.remove('active');
+            btnSnapSouth.classList.remove('active');
+            await initSensor();
         });
+
+        btnSnapNorth.addEventListener('click', async () => {
+            await initSensor();
+            // Kalibreer huidige kijkrichting direct naar 0° Noord en laat sensor meebewegen
+            sensorOffset = (360 - lastRawHeading) % 360;
+            actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
+            btnSnapNorth.classList.add('active');
+            btnSnapSouth.classList.remove('active');
+            serialOutput.innerText = `[Gekalibreerd op Noord] Live: ${actueleAzimut.toFixed(1)}°`;
+        });
+
+        btnSnapSouth.addEventListener('click', async () => {
+            await initSensor();
+            // Kalibreer huidige kijkrichting direct naar 180° Zuid en laat sensor meebewegen
+            sensorOffset = (180 - lastRawHeading + 360) % 360;
+            actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
+            btnSnapSouth.classList.add('active');
+            btnSnapNorth.classList.remove('active');
+            serialOutput.innerText = `[Gekalibreerd op Zuid] Live: ${actueleAzimut.toFixed(1)}°`;
+        });
+
+        // Automatisch luisteren indien ondersteund
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        }
 
         document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
             if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
@@ -559,7 +570,6 @@
                 const port = await navigator.serial.requestPort();
                 await port.open({ baudRate: parseInt(document.getElementById('baud-rate').value) });
                 isSerialConnected = true;
-                isManualLock = false;
                 e.target.classList.add('active');
                 const decoder = new TextDecoderStream();
                 port.readable.pipeTo(decoder.writable);
@@ -575,8 +585,9 @@
                         if (l.includes('HDT') || l.includes('RMC')) {
                             let p = l.split(',');
                             if (p[1] && !isNaN(parseFloat(p[1]))) {
-                                actueleAzimut = parseFloat(p[1]);
-                                serialOutput.innerText = `[NMEA] Azimut: ${actueleAzimut.toFixed(1)}°`;
+                                lastRawHeading = parseFloat(p[1]);
+                                actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
+                                serialOutput.innerText = `[NMEA Live] Azimut: ${actueleAzimut.toFixed(1)}°`;
                             }
                         }
                     }
@@ -753,8 +764,8 @@
             const cx = w / 2;
             const cy = h / 2;
 
-            // Alleen simulatie laten draaien als er GEEN handmatige vergrendeling of actieve sensor is
-            if (!isSerialConnected && !isMobileSensorActive && !isManualLock) {
+            // Zachte simulatie alleen als er nergens een sensor of input actief is
+            if (!isSerialConnected && !isMobileSensorActive) {
                 actueleAzimut = (actueleAzimut + 0.03) % 360;
             }
 
