@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archeo-Astronomie AR HUD | Gelaagde Matrix Engine</title>
+    <title>Geodetische LiDAR & Hydrografische Metingen HUD</title>
     <style>
         :root {
             --bg-dark: #1e1e24;
@@ -28,10 +28,9 @@
             overflow: hidden;
         }
 
-        /* 50% Kleiner Zijpaneel */
         #sidebar {
-            width: 190px;
-            min-width: 180px;
+            width: 210px;
+            min-width: 190px;
             background-color: var(--panel-bg);
             border-right: 1px solid #3d3d4a;
             padding: 6px;
@@ -54,7 +53,7 @@
 
         .control-group label {
             display: block;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: bold;
             margin-bottom: 3px;
             color: #aaa;
@@ -103,7 +102,7 @@
 
         optgroup {
             background: #1e1e24;
-            color: var(--accent-orange);
+            color: var(--accent-cyan);
             font-weight: bold;
         }
 
@@ -117,6 +116,7 @@
             min-height: 20px;
             white-space: pre-wrap;
             word-break: break-all;
+            line-height: 1.25;
         }
 
         .layer-toggle {
@@ -141,7 +141,6 @@
             cursor: pointer;
         }
 
-        /* Viewport Container & Gelaagd Systeem */
         #viewport {
             flex-grow: 1;
             position: relative;
@@ -180,14 +179,13 @@
             display: block;
         }
 
-        #layer-shadow   { z-index: 2; }
-        #layer-hydro    { z-index: 3; }
-        #layer-survey   { z-index: 4; }
-        #layer-matrix   { z-index: 5; }
+        #layer-lidar    { z-index: 2; }
+        #layer-shadow   { z-index: 3; }
+        #layer-hydro    { z-index: 4; }
+        #layer-survey   { z-index: 5; }
         #layer-scilab   { z-index: 6; }
         #layer-compass  { z-index: 7; }
 
-        /* Optische Filters */
         .filter-none { filter: none; }
         .filter-sun { filter: contrast(220%) brightness(85%) sepia(80%) hue-rotate(-20deg) saturate(300%); }
         .filter-moon { filter: contrast(160%) brightness(120%) hue-rotate(180deg) saturate(40%); }
@@ -195,16 +193,15 @@
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #sidebar { width: 100%; height: 24vh; }
-            #viewport { height: 76vh; }
+            #sidebar { width: 100%; height: 26vh; }
+            #viewport { height: 74vh; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 50% KLEINER ZIJPANEEL MET CONTROLES -->
     <div id="sidebar">
-        <h2>HUD CONSOLE</h2>
+        <h2>SURVEY & LIDAR HUD</h2>
         
         <!-- 1. HARDWARE SENSORS & MOBIELE ORIËNTATIE -->
         <div class="control-group">
@@ -237,23 +234,23 @@
         <div class="control-group">
             <label>3. Actieve Lagen</label>
             <div class="layer-toggle active">
-                <span>1: Kompas / Balk</span>
+                <span>1: Kompas Ribbon</span>
                 <input type="checkbox" id="chk-layer-compass" checked>
             </div>
             <div class="layer-toggle active">
-                <span>2: Archeo Matrix</span>
-                <input type="checkbox" id="chk-layer-matrix" checked>
+                <span>2: LiDAR Pointcloud</span>
+                <input type="checkbox" id="chk-layer-lidar" checked>
             </div>
             <div class="layer-toggle active">
                 <span>3: Scilab 3D Matrix</span>
                 <input type="checkbox" id="chk-layer-scilab" checked>
             </div>
             <div class="layer-toggle active">
-                <span>4: Tacheometrie</span>
+                <span>4: Landmeting (Roeden/Ketting)</span>
                 <input type="checkbox" id="chk-layer-survey" checked>
             </div>
             <div class="layer-toggle active">
-                <span>5: Hydrografie</span>
+                <span>5: Zeemeting (Mijlen/Vademen)</span>
                 <input type="checkbox" id="chk-layer-hydro" checked>
             </div>
             <div class="layer-toggle active">
@@ -262,64 +259,57 @@
             </div>
         </div>
 
-        <!-- 4. OPTISCHE FILTERS & TOT 1500X ZOOM -->
+        <!-- 4. LIDAR SCANS & HISTORISCHE METINGEN -->
         <div class="control-group">
-            <label>4. Filters & Zoom (tot 1500x)</label>
+            <label>4. LiDAR & Historische Maateenheid</label>
+            <select id="geo-unit-selector">
+                <optgroup label="🌊 Historische Zeemijlen / Maritiem">
+                    <option value="holland_zeemijl">Hollandse Zeemijl (5555.55 m)</option>
+                    <option value="spaans_legua">Spaanse Legua Maritima (5572 m)</option>
+                    <option value="engels_league">English Marine League (5556 m)</option>
+                    <option value="amsterdam_vadem">Amsterdamse Vadem (1.698 m)</option>
+                    <option value="engels_fathom">Engelse Fathom (1.8288 m)</option>
+                    <option value="kabellengte">Kabellengte (225.0 m)</option>
+                </optgroup>
+                <optgroup label="📐 Historische Landmaten">
+                    <option value="rijnland_roede">Rijnlandse Roede (3.767 m)</option>
+                    <option value="rijnland_voet">Rijnlandse Voet (0.314 m)</option>
+                    <option value="amsterdam_roede">Amsterdamse Roede (3.680 m)</option>
+                    <option value="amsterdam_voet">Amsterdamse Voet (0.283 m)</option>
+                    <option value="gunter_chain">Gunter's Chain / Ketting (20.1168 m)</option>
+                </optgroup>
+            </select>
+            
+            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
+                <span>LiDAR Bereik:</span><span id="lidar-range-val" style="color:var(--accent-cyan); font-weight:bold;">120m</span>
+            </div>
+            <input type="range" id="lidar-range-slider" min="10" max="5000" step="10" value="120">
+            <div class="data-display" id="lidar-metrics">LiDAR Afstand: 120.0 m&#10;Historische Maat: 31.86 Rijnl. Roede</div>
+        </div>
+
+        <!-- 5. OPTISCHE FILTERS & ZOOM TOT 1500X -->
+        <div class="control-group">
+            <label>5. Filters & Lenszoom (tot 1500x)</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard</option>
                 <option value="filter-sun">☀️ Zonnefilter</option>
                 <option value="filter-moon">🌙 Maanfilter</option>
                 <option value="filter-night">🟢 Nachtzicht</option>
             </select>
-            <div style="display:flex; justify-content:space-between; font-size:8.5px; color:#aaa;">
+            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
                 <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x</span>
             </div>
             <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="1">
         </div>
 
-        <!-- 5. CAPTURE & RECORDING -->
+        <!-- 6. CAPTURE & RECORDING -->
         <div class="control-group">
-            <label>5. Opname</label>
+            <label>6. Opname</label>
             <div class="btn-grid">
                 <button id="btn-take-photo">📸 Foto</button>
                 <button id="btn-record-video">🎥 Record</button>
             </div>
             <div class="data-display" id="capture-status">Stand-by</div>
-        </div>
-
-        <!-- 6. ARCHEO MATRIX (NL & ZWEDEN) -->
-        <div class="control-group">
-            <label>6. Archeo Matrix</label>
-            <select id="target-selector">
-                <optgroup label="🇳🇱 Nederland">
-                    <option value="13.8" data-name="Orisant (13.8° Maan)">Orisant (13.8°)</option>
-                    <option value="137.5" data-name="Nehalennia (137.5° Zon)">Nehalennia (137.5°)</option>
-                    <option value="190.5" data-name="Doornik (190.5° Schelde)">Doornik (190.5°)</option>
-                    <option value="51.2" data-name="D53 Havelte (51.2° Solstitium)">D53 Havelte (51.2°)</option>
-                    <option value="231.5" data-name="D27 Borger (231.5° Winter)">D27 Borger (231.5°)</option>
-                    <option value="87.0" data-name="Kootwijk (87.0° Equinox)">Kootwijk (87.0°)</option>
-                </optgroup>
-                <optgroup label="🇸🇪 Zweden">
-                    <option value="134.0" data-name="Ales Stenar (134.0° Winter)">Ales Stenar (134.0°)</option>
-                    <option value="314.0" data-name="Ales Stenar (314.0° Zomer)">Ales Stenar (314.0°)</option>
-                    <option value="23.5" data-name="Anundshög (23.5°)">Anundshög (23.5°)</option>
-                    <option value="180.0" data-name="Gamla Uppsala (180.0°)">Gamla Uppsala (180.0°)</option>
-                    <option value="62.3" data-name="Rösaring (62.3° Weg)">Rösaring (62.3°)</option>
-                    <option value="208.5" data-name="Gångesteinen (208.5°)">Gångesteinen (208.5°)</option>
-                </optgroup>
-            </select>
-        </div>
-
-        <!-- 7. MOERNEREN BODEMDALING -->
-        <div class="control-group">
-            <label>7. Moerneren (1300-1600)</label>
-            <input type="range" id="time-slider" min="1300" max="1600" value="1300" step="1">
-            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>1300</span>
-                <span id="year-display" style="color:var(--accent-orange); font-weight:bold;">1300</span>
-                <span>1600</span>
-            </div>
-            <div class="data-display" id="reimerswaal-status">1300: +2.50m NAP</div>
         </div>
     </div>
 
@@ -328,18 +318,17 @@
         <div id="feed-wrapper">
             <video id="video-feed" autoplay playsinline muted></video>
             
+            <canvas id="layer-lidar" class="hud-layer"></canvas>
             <canvas id="layer-shadow" class="hud-layer"></canvas>
             <canvas id="layer-hydro" class="hud-layer"></canvas>
             <canvas id="layer-survey" class="hud-layer"></canvas>
-            <canvas id="layer-matrix" class="hud-layer"></canvas>
             <canvas id="layer-scilab" class="hud-layer"></canvas>
             <canvas id="layer-compass" class="hud-layer"></canvas>
         </div>
     </div>
 
-    <!-- JAVASCRIPT ENGINE -->
     <script>
-        // === STATE & MOBIELE COMPASS ENGINE ===
+        // === STATE ENGINE & HARDWARE ===
         let actueleAzimut = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
@@ -348,12 +337,14 @@
         let cameraStream = null;
         let screenStream = null;
 
-        // DOM Elementen
         const viewport = document.getElementById('viewport');
         const feedWrapper = document.getElementById('feed-wrapper');
         const video = document.getElementById('video-feed');
         const serialOutput = document.getElementById('serial-output');
-        const targetSelector = document.getElementById('target-selector');
+        const geoUnitSelector = document.getElementById('geo-unit-selector');
+        const lidarRangeSlider = document.getElementById('lidar-range-slider');
+        const lidarRangeVal = document.getElementById('lidar-range-val');
+        const lidarMetrics = document.getElementById('lidar-metrics');
         const filterSelector = document.getElementById('filter-selector');
         const zoomSlider = document.getElementById('zoom-slider');
         const zoomVal = document.getElementById('zoom-val');
@@ -364,11 +355,26 @@
 
         const layers = {
             compass: { canvas: document.getElementById('layer-compass'), ctx: document.getElementById('layer-compass').getContext('2d'), chk: document.getElementById('chk-layer-compass') },
-            matrix:  { canvas: document.getElementById('layer-matrix'),  ctx: document.getElementById('layer-matrix').getContext('2d'),  chk: document.getElementById('chk-layer-matrix') },
+            lidar:   { canvas: document.getElementById('layer-lidar'),   ctx: document.getElementById('layer-lidar').getContext('2d'),   chk: document.getElementById('chk-layer-lidar') },
             scilab:  { canvas: document.getElementById('layer-scilab'),  ctx: document.getElementById('layer-scilab').getContext('2d'),  chk: document.getElementById('chk-layer-scilab') },
             survey:  { canvas: document.getElementById('layer-survey'),  ctx: document.getElementById('layer-survey').getContext('2d'),  chk: document.getElementById('chk-layer-survey') },
             hydro:   { canvas: document.getElementById('layer-hydro'),   ctx: document.getElementById('layer-hydro').getContext('2d'),   chk: document.getElementById('chk-layer-hydro') },
             shadow:  { canvas: document.getElementById('layer-shadow'),  ctx: document.getElementById('layer-shadow').getContext('2d'),  chk: document.getElementById('chk-layer-shadow') }
+        };
+
+        // Historische Maatconversie Factoren (naar meters)
+        const HISTORICAL_UNITS = {
+            holland_zeemijl: { factor: 5555.55, name: "Holl. Zeemijl", code: "HZM" },
+            spaans_legua:    { factor: 5572.00, name: "Legua Maritima", code: "LEG" },
+            engels_league:   { factor: 5556.00, name: "Marine League", code: "LEA" },
+            amsterdam_vadem: { factor: 1.698,   name: "Amst. Vadem", code: "AV" },
+            engels_fathom:   { factor: 1.8288,  name: "Fathom", code: "FTH" },
+            kabellengte:     { factor: 225.0,   name: "Kabellengte", code: "CBL" },
+            rijnland_roede:  { factor: 3.767,   name: "Rijnl. Roede", code: "RR" },
+            rijnland_voet:   { factor: 0.314,   name: "Rijnl. Voet", code: "RV" },
+            amsterdam_roede: { factor: 3.680,   name: "Amst. Roede", code: "AR" },
+            amsterdam_voet:  { factor: 0.283,   name: "Amst. Voet", code: "AVt" },
+            gunter_chain:    { factor: 20.1168, name: "Gunter Ketting", code: "CHN" }
         };
 
         function resizeAllLayers() {
@@ -382,7 +388,6 @@
         window.addEventListener('resize', resizeAllLayers);
         resizeAllLayers();
 
-        // Checkbox status styling triggers
         Object.values(layers).forEach(layer => {
             layer.chk.addEventListener('change', (e) => {
                 const parent = e.target.closest('.layer-toggle');
@@ -395,19 +400,13 @@
             });
         });
 
-        // === 1. MOBIELE COMPASS & GYROSCOOP SENSOR ===
+        // === 1. MOBIELE COMPASS & GYROSCOOP ===
         function handleOrientation(event) {
             let heading = null;
             if (event.webkitCompassHeading !== undefined) {
-                // iOS Safari
                 heading = event.webkitCompassHeading;
             } else if (event.alpha !== null) {
-                // Android Chrome absolute orientation
-                if (event.absolute) {
-                    heading = 360 - event.alpha;
-                } else {
-                    heading = (360 - event.alpha) % 360;
-                }
+                heading = event.absolute ? (360 - event.alpha) : ((360 - event.alpha) % 360);
             }
 
             if (heading !== null && !isNaN(heading)) {
@@ -426,9 +425,7 @@
                         btnEnableSensor.classList.add('active');
                         btnEnableSensor.innerText = '📱 Sensor Actief';
                     }
-                } catch (e) {
-                    alert('Sensor permissie fout: ' + e.message);
-                }
+                } catch (e) { alert('Sensor fout: ' + e.message); }
             } else {
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 window.addEventListener('deviceorientation', handleOrientation, true);
@@ -437,7 +434,6 @@
             }
         });
 
-        // Automatisch inschakelen op compatibele mobiele apparaten
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientationabsolute', handleOrientation, true);
             window.addEventListener('deviceorientation', handleOrientation, true);
@@ -466,9 +462,7 @@
                     video.srcObject = cameraStream;
                     btnToggleCamera.classList.add('danger');
                     btnToggleCamera.innerText = 'Stop Cam';
-                } catch (err) {
-                    alert("Camera fout: " + err.message);
-                }
+                } catch (err) { alert("Camera fout: " + err.message); }
             }
         });
 
@@ -494,9 +488,7 @@
                     btnToggleScreen.classList.add('danger');
                     btnToggleScreen.innerText = 'Stop Deel';
                     screenStream.getVideoTracks()[0].onended = stopScreenShare;
-                } catch (err) {
-                    console.error("Schermfout:", err);
-                }
+                } catch (err) { console.error(err); }
             }
         });
 
@@ -513,16 +505,14 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 5. TOT 1500X ZOOM & FILTERS ===
+        // === 5. TOT 1500X ZOOM & OPTISCHE FILTERS ===
         zoomSlider.addEventListener('input', (e) => {
             const z = parseFloat(e.target.value);
             zoomVal.innerText = z >= 10 ? z.toFixed(0) + 'x' : z.toFixed(1) + 'x';
             feedWrapper.style.transform = `scale(${z})`;
         });
 
-        filterSelector.addEventListener('change', (e) => {
-            video.className = e.target.value;
-        });
+        filterSelector.addEventListener('change', (e) => { video.className = e.target.value; });
 
         // === 6. CAPTURE & OPNAME ===
         function getMergedLayersCanvas() {
@@ -537,7 +527,7 @@
                 mCtx.filter = 'none';
             }
 
-            const layerKeys = ['shadow', 'hydro', 'survey', 'matrix', 'scilab', 'compass'];
+            const layerKeys = ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'];
             layerKeys.forEach(k => {
                 if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
             });
@@ -547,7 +537,7 @@
         document.getElementById('btn-take-photo').addEventListener('click', () => {
             const merged = getMergedLayersCanvas();
             const link = document.createElement('a');
-            link.download = `Archeo_HUD_${Date.now()}.png`;
+            link.download = `LiDAR_Survey_${Date.now()}.png`;
             link.href = merged.toDataURL('image/png');
             link.click();
             captureStatus.innerText = "Foto opgeslagen!";
@@ -570,7 +560,7 @@
                         mCtx.drawImage(video, 0, 0, merged.width, merged.height);
                         mCtx.filter = 'none';
                     }
-                    ['shadow', 'hydro', 'survey', 'matrix', 'scilab', 'compass'].forEach(k => {
+                    ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'].forEach(k => {
                         if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
                     });
                     if (isRecording) requestAnimationFrame(renderMergedStream);
@@ -583,7 +573,7 @@
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `Archeo_Video_${Date.now()}.webm`;
+                    a.download = `LiDAR_Survey_Video_${Date.now()}.webm`;
                     a.click();
                     captureStatus.innerText = "Video gedownload!";
                 };
@@ -602,7 +592,7 @@
             }
         });
 
-        // === 7. WEB SERIAL API (NMEA) ===
+        // === 7. WEB SERIAL API (NMEA 0183) ===
         document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
             if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
             try {
@@ -633,26 +623,25 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 8. MOERNEREN CALCULATOR ===
-        const timeSlider = document.getElementById('time-slider');
-        const yearDisplay = document.getElementById('year-display');
-        const reimerswaalStatus = document.getElementById('reimerswaal-status');
-
-        timeSlider.addEventListener('input', (e) => {
-            const yr = parseInt(e.target.value);
-            yearDisplay.innerText = yr;
-            let z = 2.5;
-            for (let i = 1; i <= (yr - 1300); i++) z -= (0.003 * Math.pow(1.018, i));
+        // === 8. LIDAR CALCULATOR & POINT-CLOUD SIMULATOR ===
+        lidarRangeSlider.addEventListener('input', (e) => {
+            const m = parseFloat(e.target.value);
+            lidarRangeVal.innerText = m >= 1000 ? (m / 1000).toFixed(2) + 'km' : m.toFixed(0) + 'm';
             
-            let t = `${yr}: ${z > 0 ? '+' : ''}${z.toFixed(2)}m NAP`;
-            if (yr === 1530) { t += " (🚨 Felixvloed)"; reimerswaalStatus.style.color = '#ff4444'; }
-            else if (yr === 1532) { t += " (🚨 Allerheiligen)"; reimerswaalStatus.style.color = '#ff4444'; }
-            else if (z < 1.2) { t += " (⚠️ Onder HW)"; reimerswaalStatus.style.color = '#ff9900'; }
-            else { reimerswaalStatus.style.color = '#4ade80'; }
-            reimerswaalStatus.innerText = t;
+            const unitKey = geoUnitSelector.value;
+            const unit = HISTORICAL_UNITS[unitKey];
+            const converted = (m / unit.factor).toFixed(3);
+            lidarMetrics.innerText = `LiDAR Range: ${m.toFixed(1)} m\nConversie: ${converted} ${unit.name} (${unit.code})`;
         });
 
-        // === 9. HOOFD RENDER LOOP MET MEE-DRAAIENDE HUD BOVENBALK ===
+        geoUnitSelector.addEventListener('change', () => {
+            lidarRangeSlider.dispatchEvent(new Event('input'));
+        });
+
+        // Initialiseer LiDAR data display
+        lidarRangeSlider.dispatchEvent(new Event('input'));
+
+        // === 9. HOOFD RENDER LOOP MET GELAAGDE OVERLAYS ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
@@ -663,13 +652,15 @@
                 actueleAzimut = (actueleAzimut + 0.03) % 360;
             }
 
-            // --- LAAG 1: DYNAMISCH MEE-DRAAIENDE KOMPAS BOVENBALK ---
+            const currentLidarDist = parseFloat(lidarRangeSlider.value);
+            const currentUnit = HISTORICAL_UNITS[geoUnitSelector.value];
+            const currentHistoricalVal = (currentLidarDist / currentUnit.factor).toFixed(2);
+
+            // --- LAAG 1: KOMPAS BOVENBALK ---
             if (layers.compass.chk.checked) {
                 const cCtx = layers.compass.ctx;
                 cCtx.clearRect(0, 0, w, h);
 
-                // Dynamische Kompaslint Ribbon
-                const ribbonY = 22;
                 cCtx.fillStyle = 'rgba(15, 16, 22, 0.75)';
                 cCtx.fillRect(0, 0, w, 40);
                 cCtx.strokeStyle = 'rgba(255, 107, 74, 0.5)';
@@ -677,7 +668,6 @@
                 cCtx.moveTo(0, 40); cCtx.lineTo(w, 40);
                 cCtx.stroke();
 
-                // Teken bewegende gradenverdeling
                 const pxPerDeg = w / CAMERA_FOV;
                 const minDeg = Math.floor(actueleAzimut - CAMERA_FOV / 2);
                 const maxDeg = Math.ceil(actueleAzimut + CAMERA_FOV / 2);
@@ -712,7 +702,6 @@
                     }
                 }
 
-                // Centrale vizier-driehoek op actuele sensor-azimut
                 cCtx.beginPath();
                 cCtx.moveTo(cx - 6, 40);
                 cCtx.lineTo(cx + 6, 40);
@@ -728,52 +717,61 @@
                 cCtx.textAlign = 'left';
             }
 
-            // --- LAAG 2: ARCHEO MATRIX DOELINDICATOR ---
-            if (layers.matrix.chk.checked) {
-                const mCtx = layers.matrix.ctx;
-                mCtx.clearRect(0, 0, w, h);
+            // --- LAAG 2: LIDAR POINTCLOUD & HISTORISCHE AFSTANDMETING ---
+            if (layers.lidar.chk.checked) {
+                const lCtx = layers.lidar.ctx;
+                lCtx.clearRect(0, 0, w, h);
 
-                const targetAzimut = parseFloat(targetSelector.value);
-                const targetName = targetSelector.options[targetSelector.selectedIndex].dataset.name;
+                // Teken LiDAR raster en scanner cirkels
+                lCtx.strokeStyle = 'rgba(0, 245, 212, 0.4)';
+                lCtx.lineWidth = 1.2;
 
-                let deltaHoek = targetAzimut - actueleAzimut;
-                if (deltaHoek > 180) deltaHoek -= 360;
-                if (deltaHoek < -180) deltaHoek += 360;
-
-                if (Math.abs(deltaHoek) <= CAMERA_FOV / 2) {
-                    const pxPerDeg = w / CAMERA_FOV;
-                    const xPos = cx + (deltaHoek * pxPerDeg);
-
-                    mCtx.beginPath();
-                    mCtx.moveTo(xPos, 40); mCtx.lineTo(xPos, h);
-                    mCtx.strokeStyle = 'rgba(138, 43, 226, 0.85)';
-                    mCtx.lineWidth = 2.5;
-                    mCtx.setLineDash([12, 8]);
-                    mCtx.stroke();
-
-                    mCtx.beginPath();
-                    mCtx.arc(xPos, cy, 26, 0, 2 * Math.PI);
-                    mCtx.strokeStyle = 'var(--accent-orange)';
-                    mCtx.setLineDash([]);
-                    mCtx.stroke();
-
-                    mCtx.beginPath();
-                    mCtx.moveTo(xPos - 35, cy); mCtx.lineTo(xPos + 35, cy);
-                    mCtx.moveTo(xPos, cy - 35); mCtx.lineTo(xPos, cy + 35);
-                    mCtx.lineWidth = 1.5;
-                    mCtx.stroke();
-
-                    mCtx.fillStyle = 'rgba(30, 30, 36, 0.9)';
-                    mCtx.fillRect(xPos + 30, cy - 25, 200, 50);
-                    mCtx.strokeStyle = 'rgba(255, 107, 74, 0.6)';
-                    mCtx.strokeRect(xPos + 30, cy - 25, 200, 50);
+                const lidarRings = [40, 80, 130, 190];
+                lidarRings.forEach((r, idx) => {
+                    lCtx.beginPath();
+                    lCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+                    lCtx.setLineDash([4, 4]);
+                    lCtx.stroke();
+                    lCtx.setLineDash([]);
                     
-                    mCtx.fillStyle = '#4ade80'; 
-                    mCtx.font = 'bold 10px "Courier New"';
-                    mCtx.fillText(`${targetName}`, xPos + 38, cy - 8);
-                    mCtx.fillStyle = '#fff';
-                    mCtx.fillText(`AZ: ${targetAzimut.toFixed(1)}° | Δ: ${Math.abs(deltaHoek).toFixed(1)}°`, xPos + 38, cy + 10);
+                    // Afstandslabel per ring
+                    let distRing = (currentLidarDist * ((idx + 1) / 4)).toFixed(0);
+                    lCtx.fillStyle = 'rgba(0, 245, 212, 0.7)';
+                    lCtx.font = '8px "Courier New"';
+                    lCtx.fillText(`${distRing}m`, cx + r + 4, cy - 2);
+                });
+
+                // Gesimuleerde LiDAR Pointcloud Targets
+                const numPoints = 18;
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = (i * (360 / numPoints) + actueleAzimut * 1.5) * (Math.PI / 180);
+                    const distRatio = 0.3 + 0.6 * Math.sin(i * 3.7 + actueleAzimut * 0.05);
+                    const px = cx + Math.cos(angle) * (180 * distRatio);
+                    const py = cy + Math.sin(angle) * (180 * distRatio);
+
+                    lCtx.beginPath();
+                    lCtx.arc(px, py, 2.5, 0, 2 * Math.PI);
+                    lCtx.fillStyle = i % 2 === 0 ? 'var(--accent-cyan)' : 'var(--accent-green)';
+                    lCtx.fill();
                 }
+
+                // Centrale LiDAR Reticle Box
+                lCtx.strokeStyle = 'var(--accent-cyan)';
+                lCtx.lineWidth = 1.5;
+                lCtx.strokeRect(cx - 25, cy - 25, 50, 50);
+
+                lCtx.fillStyle = 'rgba(15, 22, 28, 0.85)';
+                lCtx.fillRect(cx + 35, cy - 35, 210, 52);
+                lCtx.strokeStyle = 'var(--accent-cyan)';
+                lCtx.strokeRect(cx + 35, cy - 35, 210, 52);
+
+                lCtx.fillStyle = 'var(--accent-cyan)';
+                lCtx.font = 'bold 10px "Courier New"';
+                lCtx.fillText(`⚡ LIDAR AFSTANDSRETICLE`, cx + 42, cy - 20);
+                lCtx.fillStyle = '#fff';
+                lCtx.fillText(`METRISCH : ${currentLidarDist.toFixed(1)} m`, cx + 42, cy - 6);
+                lCtx.fillStyle = 'var(--accent-yellow)';
+                lCtx.fillText(`HISTORISCH: ${currentHistoricalVal} ${currentUnit.code} (${currentUnit.name})`, cx + 42, cy + 8);
             }
 
             // --- LAAG 3: SCILAB 3D ROTATIE MATRIX ---
@@ -805,7 +803,7 @@
                 sCtx.fillText(`det=1.00 | FOV=${CAMERA_FOV}°`, 22, 146);
             }
 
-            // --- LAAG 4: TACHEOMETRIE / STADIA KRUIS ---
+            // --- LAAG 4: LANDMETINGEN (ROEDEN / KETTING) ---
             if (layers.survey.chk.checked) {
                 const svCtx = layers.survey.ctx;
                 svCtx.clearRect(0, 0, w, h);
@@ -814,38 +812,39 @@
                 svCtx.lineWidth = 1.2;
 
                 svCtx.beginPath();
-                svCtx.moveTo(cx - 40, cy); svCtx.lineTo(cx + 40, cy);
-                svCtx.moveTo(cx, cy - 40); svCtx.lineTo(cx, cy + 40);
+                svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
+                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx, cy + 50);
                 svCtx.stroke();
 
+                // Stadia draden voor kettingmetingen
                 svCtx.beginPath();
-                svCtx.moveTo(cx - 15, cy - 20); svCtx.lineTo(cx + 15, cy - 20);
-                svCtx.moveTo(cx - 15, cy + 20); svCtx.lineTo(cx + 15, cy + 20);
+                svCtx.moveTo(cx - 20, cy - 25); svCtx.lineTo(cx + 20, cy - 25);
+                svCtx.moveTo(cx - 20, cy + 25); svCtx.lineTo(cx + 20, cy + 25);
                 svCtx.stroke();
 
-                svCtx.beginPath();
-                svCtx.arc(cx, cy, 80, 0, 2 * Math.PI);
-                svCtx.strokeStyle = 'rgba(0, 245, 212, 0.2)';
-                svCtx.stroke();
+                svCtx.fillStyle = 'rgba(0, 245, 212, 0.9)';
+                svCtx.font = 'bold 9px "Courier New"';
+                svCtx.fillText(`📐 LANDMEETKRUIS: RIJNLAND & GUNTER METING`, 15, h - 50);
             }
 
-            // --- LAAG 5: ZEEMETING & HYDROGRAFIE ---
+            // --- LAAG 5: ZEEMETINGEN (HISTORISCHE ZEEMIJLEN & VADEMEN) ---
             if (layers.hydro.chk.checked) {
                 const hCtx = layers.hydro.ctx;
                 hCtx.clearRect(0, 0, w, h);
 
-                const waterY = h - 28;
+                const waterY = h - 30;
                 hCtx.fillStyle = 'rgba(0, 187, 249, 0.2)';
-                hCtx.fillRect(0, waterY, w, 28);
+                hCtx.fillRect(0, waterY, w, 30);
                 hCtx.strokeStyle = 'var(--accent-blue)';
                 hCtx.lineWidth = 1.5;
                 hCtx.beginPath();
                 hCtx.moveTo(0, waterY); hCtx.lineTo(w, waterY);
                 hCtx.stroke();
 
+                const vademVal = (currentLidarDist / 1.698).toFixed(1);
                 hCtx.fillStyle = 'var(--accent-blue)';
                 hCtx.font = 'bold 9px "Courier New"';
-                hCtx.fillText(`🌊 HYDROGRAFIE: LAT NIVEAU ACTIEF`, 15, waterY + 18);
+                hCtx.fillText(`🌊 ZEEMETING: ${vademVal} Amst. Vademen | ${currentHistoricalVal} ${currentUnit.code}`, 15, waterY + 18);
             }
 
             // --- LAAG 6: GNOMON SCHADUWPROJECTIE ---
