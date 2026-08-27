@@ -176,9 +176,16 @@
         .filter-sun-solar  { filter: brightness(40%) contrast(400%) sepia(100%) hue-rotate(5deg) saturate(300%); }
         .filter-sun-halpha { filter: brightness(35%) contrast(500%) sepia(100%) hue-rotate(330deg) saturate(600%) blur(0.5px); }
         .filter-sun-nd     { filter: brightness(20%) contrast(500%) sepia(100%) hue-rotate(-20deg) saturate(400%); } 
+        
         .filter-moon-lumi  { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
         .filter-moon-lpr   { filter: contrast(200%) brightness(110%) hue-rotate(200deg) saturate(180%) invert(5%); }
         .filter-moon-ir    { filter: grayscale(100%) brightness(140%) contrast(220%); }
+        
+        /* Nieuwe Sterren & Satellieten Filters */
+        .filter-astro-stars { filter: contrast(450%) brightness(160%) saturate(70%); }
+        .filter-astro-sat   { filter: grayscale(100%) contrast(600%) brightness(180%); }
+        .filter-astro-nebula { filter: contrast(350%) brightness(140%) saturate(400%) hue-rotate(290deg); }
+
         .filter-night-gen3 { filter: brightness(145%) contrast(200%) sepia(100%) hue-rotate(80deg) saturate(450%); }
         .filter-flir-iron  { filter: contrast(260%) brightness(95%) saturate(400%) hue-rotate(260deg) invert(20%); }
         .filter-flir-white { filter: grayscale(100%) invert(100%) contrast(280%) brightness(115%); }
@@ -225,16 +232,25 @@
             <label>3. Spectraalfilters & Zoom</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard (Scherpte Boost)</option>
+                
+                <optgroup label="✨ Sterren & Satellieten">
+                    <option value="filter-astro-stars">✨ Sterrenveld (High Gain)</option>
+                    <option value="filter-astro-sat">🛰️ Satelliet Tracker (Mono, Max Contrast)</option>
+                    <option value="filter-astro-nebula">🌌 Deep Sky (Nevel/Kleur Boost)</option>
+                </optgroup>
+
                 <optgroup label="☀️ Zon- & Eclipsfilters">
                     <option value="filter-sun-nd">🌑 Eclips ND-Filter (Zwaar)</option>
                     <option value="filter-sun-solar">☀️ Zonnefolie (Oranje)</option>
                     <option value="filter-sun-halpha">🔴 H-Alpha 656nm (Rood)</option>
                 </optgroup>
+
                 <optgroup label="🌙 Maan- & Astrometriefilters">
                     <option value="filter-moon-lumi">🌙 Maanfilter</option>
                     <option value="filter-moon-lpr">🌌 LPR-Filter</option>
                     <option value="filter-moon-ir">📡 Infrarood Pass</option>
                 </optgroup>
+
                 <optgroup label="🟢 Nachtzicht & Sensorfilters">
                     <option value="filter-night-gen3">🟢 Nachtzicht Gen-3</option>
                     <option value="filter-flir-iron">🔥 FLIR Thermisch</option>
@@ -258,7 +274,6 @@
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
                 <span>Actuele Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1x</span>
             </div>
-            <!-- Max slider limiet verhoogd naar 100 -->
             <input type="range" id="zoom-slider" min="1" max="100" step="0.5" value="1">
             
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
@@ -498,7 +513,6 @@
             feedWrapper.style.transform = `scale(${z})`;
             video.className = filterSelector.value;
 
-            // Boven de 8x wordt het extreem pixelated, de browser mag dan geen vervaging meer toepassen
             if (chkAutoSharpness.checked && z > 1.5) {
                 video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
             } else {
@@ -520,12 +534,10 @@
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
             let currentZoom = parseFloat(zoomSlider.value);
-            // Sneller inzoomen met het scrollwieltje nu de limiet 100x is
             const zoomStep = 1.5; 
             if (e.deltaY < 0) currentZoom += zoomStep;
             else currentZoom -= zoomStep;
             
-            // Limiet geüpdatet naar 100x
             currentZoom = Math.max(1, Math.min(100, currentZoom));
             zoomSlider.value = currentZoom.toFixed(1);
             applySharpZoom();
@@ -554,7 +566,6 @@
                 const currentDistance = getPinchDistance(e);
                 const scale = currentDistance / initialPinchDistance;
                 let newZoom = initialZoomValue * scale;
-                // Limiet geüpdatet naar 100x
                 newZoom = Math.max(1, Math.min(100, newZoom));
                 zoomSlider.value = newZoom.toFixed(1);
                 applySharpZoom();
