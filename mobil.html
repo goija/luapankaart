@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Geodetische & Hydrografische HUD</title>
     <style>
         :root {
@@ -26,6 +26,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            touch-action: none; /* Voorkomt standaard browser zoomgedrag op mobiel */
         }
 
         #sidebar {
@@ -66,7 +67,6 @@
             margin-bottom: 3px;
         }
 
-        /* Specifieke grid voor de zoomknoppen */
         .zoom-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -135,6 +135,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: crosshair;
         }
 
         #feed-wrapper {
@@ -143,7 +144,7 @@
             height: 100%;
             transform: scale(1);
             transform-origin: center center;
-            transition: transform 0.05s ease-out;
+            transition: transform 0.05s ease-out; /* Maakt scrollzoom soepeler */
             will-change: transform;
         }
 
@@ -224,7 +225,7 @@
 
         <!-- 3. VOLLEDIG SPECTRUM FILTERS & ZOOM -->
         <div class="control-group">
-            <label>3. Spectraalfilters & Sharp-Zoom</label>
+            <label>3. Spectraalfilters & Zoom</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard (Scherpte Boost)</option>
                 <optgroup label="☀️ Zon- & Eclipsfilters">
@@ -249,7 +250,7 @@
                 <span>Zoom Presets:</span>
             </div>
             
-            <!-- Nieuwe Zoom Knoppen -->
+            <!-- Zoom Knoppen -->
             <div class="zoom-grid">
                 <button class="zoom-btn" data-zoom="1">1x</button>
                 <button class="zoom-btn" data-zoom="2">2x</button>
@@ -259,9 +260,9 @@
             </div>
 
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>Fijn-afstelling:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1x</span>
+                <span>Actuele Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1x</span>
             </div>
-            <input type="range" id="zoom-slider" min="1" max="15" step="0.5" value="1">
+            <input type="range" id="zoom-slider" min="1" max="15" step="0.1" value="1">
             
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
                 <input type="checkbox" id="chk-auto-sharpness" checked style="width:auto; margin:0;">
@@ -492,8 +493,9 @@
         // === 3. ZOOM & ADAPTIEVE SHARP ENGINE ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
-            zoomVal.innerText = z + 'x';
+            zoomVal.innerText = z.toFixed(1) + 'x';
 
+            // Hardware zoom toepassen op de camera sensor indien mogelijk
             if (videoTrack && cameraCapabilities && cameraCapabilities.zoom) {
                 const hwMin = cameraCapabilities.zoom.min;
                 const hwMax = cameraCapabilities.zoom.max;
@@ -501,9 +503,11 @@
                 videoTrack.applyConstraints({ advanced: [{ zoom: targetHwZoom }] }).catch(() => {});
             }
 
+            // Softwarematige transform schaling (visueel)
             feedWrapper.style.transform = `scale(${z})`;
             video.className = filterSelector.value;
 
+            // Anti-blur (scherpere randen bij digitale zoom)
             if (chkAutoSharpness.checked && z > 1.5) {
                 video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
             } else {
@@ -511,7 +515,7 @@
             }
         }
 
-        // Koppel de nieuwe zoom knoppen
+        // Koppel de zoom presets knoppen
         zoomButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 zoomSlider.value = e.target.getAttribute('data-zoom');
@@ -519,15 +523,73 @@
             });
         });
 
-        zoomSlider.value = 1;
-        applySharpZoom();
-
         zoomSlider.addEventListener('input', applySharpZoom);
         chkAutoSharpness.addEventListener('change', applySharpZoom);
         filterSelector.addEventListener('change', applySharpZoom);
 
+        // === 4. SCHERM INTERACTIE (SCROLL & PINCH ZOOM) ===
 
-        // === 4. OPNAME & FOTO ===
+        // Desktop Muizwiel Zoom
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault(); // Voorkom standaard pagina-scrollen
+            let currentZoom = parseFloat(zoomSlider.value);
+            
+            // Pas de zoom aanb (gevoeligheid kun je wijzigen bij zoomStep)
+            const zoomStep = 0.2; 
+            if (e.deltaY < 0) {
+                currentZoom += zoomStep; // Zoom in
+            } else {
+                currentZoom -= zoomStep; // Zoom uit
+            }
+            
+            // Beperk tussen 1x en 15x
+            currentZoom = Math.max(1, Math.min(15, currentZoom));
+            
+            zoomSlider.value = currentZoom.toFixed(1);
+            applySharpZoom();
+        }, { passive: false });
+
+        // Mobiele Pinch-to-Zoom
+        let initialPinchDistance = null;
+        let initialZoomValue = 1;
+
+        function getPinchDistance(e) {
+            return Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+        }
+
+        viewport.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialPinchDistance = getPinchDistance(e);
+                initialZoomValue = parseFloat(zoomSlider.value);
+            }
+        }, { passive: false });
+
+        viewport.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && initialPinchDistance !== null) {
+                e.preventDefault(); // Voorkom het bewegen/zoomen van de webpagina zelf
+                const currentDistance = getPinchDistance(e);
+                const scale = currentDistance / initialPinchDistance;
+                let newZoom = initialZoomValue * scale;
+                
+                // Beperk tussen 1x en 15x
+                newZoom = Math.max(1, Math.min(15, newZoom));
+                
+                zoomSlider.value = newZoom.toFixed(1);
+                applySharpZoom();
+            }
+        }, { passive: false });
+
+        viewport.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+        });
+
+
+        // === 5. OPNAME & FOTO ===
         document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
             else document.exitFullscreen();
@@ -613,7 +675,7 @@
             }
         });
 
-        // === 5. HOOFD RENDER LOOP (UITGEKLEDE HUD) ===
+        // === 6. HOOFD RENDER LOOP (UITGEKLEDE HUD) ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
