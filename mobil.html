@@ -303,7 +303,6 @@
         // === STATE ENGINE & CONFIGURATIE ===
         let actueleAzimut = 0.0;
         let sensorOffset = 0.0;
-        let lastRawHeading = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
         let hasAbsoluteSensor = false;
@@ -349,7 +348,7 @@
         window.addEventListener('resize', resizeAllLayers);
         resizeAllLayers();
 
-        // CAMERA FUNCTIES...
+        // === CAMERA ===
         function stopCamera() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
@@ -363,9 +362,8 @@
         }
 
         btnToggleCamera.addEventListener('click', async () => {
-            if (cameraStream) {
-                stopCamera();
-            } else {
+            if (cameraStream) stopCamera();
+            else {
                 try {
                     if (screenStream) stopScreenShare();
                     cameraStream = await navigator.mediaDevices.getUserMedia({ 
@@ -386,69 +384,77 @@
             }
         });
 
-        function stopScreenShare() {
-            if (screenStream) {
-                screenStream.getTracks().forEach(t => t.stop());
-                screenStream = null;
-            }
-            if (video.srcObject && !cameraStream) video.srcObject = null;
-            btnToggleScreen.classList.remove('danger');
-            btnToggleScreen.innerText = 'Scherm';
-        }
-
-        btnToggleScreen.addEventListener('click', async () => {
-            if (screenStream) {
-                stopScreenShare();
-            } else {
-                try {
-                    if (cameraStream) stopCamera();
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60 }, audio: false });
-                    video.srcObject = screenStream;
-                    btnToggleScreen.classList.add('danger');
-                    btnToggleScreen.innerText = 'Stop Deel';
-                    screenStream.getVideoTracks()[0].onended = stopScreenShare;
-                } catch (err) { console.error(err); }
-            }
-        });
-
-
-        // === VERNIEUWDE KOMPAS LOGICA (ANTI GIMBAL-LOCK) ===
+        // === QUATERNION KOMPAS SENSOR (GIMBAL-LOCK VRIJ) ===
         function handleOrientation(event) {
             let heading = null;
             
-            // Markeer of we absolute data (noord-referentie) binnenkrijgen
-            if (event.absolute || event.type === 'deviceorientationabsolute') {
-                hasAbsoluteSensor = true;
-            }
+            // Markeer dat we pure kompasdata (Noord-referentie) ontvangen
+            if (event.absolute || event.type === 'deviceorientationabsolute') hasAbsoluteSensor = true;
 
-            // iOS (Safari) geeft direct een betrouwbaar kompas door
+            // iOS Safari levert direct het hardware kompas
             if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
                 heading = event.webkitCompassHeading;
+                hasAbsoluteSensor = true;
             } 
-            // Android (Chrome): Gebruik de absolute Alpha. Simpel en voorkomt as-spinning (gimbal lock).
-            else if (event.alpha !== null) {
-                // Als we geen absolute data hebben, klopt de hoek niet met het echte noorden.
-                // We accepteren relatieve alpha alleen als fallback of als absolute niet bestaat.
+            // ANDROID: QUATERNION GIMBAL-LOCK FIX
+            else if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
+                // Alleen uitvoeren als we weten waar het noorden is, of als fallback
                 if (hasAbsoluteSensor || event.absolute === undefined) {
-                    // Alpha draait tegen de klok in (0 = Noord, 90 = West).
-                    // We converteren dit naar een standaard kompas (0 = Noord, 90 = Oost).
-                    heading = 360 - event.alpha;
+                    const degToRad = Math.PI / 180;
+
+                    // 1. Converteer Euler naar radialen (W3C Z-X-Y volgorde)
+                    const alpha = event.alpha * degToRad;
+                    const beta = event.beta * degToRad;
+                    const gamma = event.gamma * degToRad;
+
+                    const c1 = Math.cos(beta / 2);
+                    const c2 = Math.cos(gamma / 2);
+                    const c3 = Math.cos(alpha / 2);
+                    const s1 = Math.sin(beta / 2);
+                    const s2 = Math.sin(gamma / 2);
+                    const s3 = Math.sin(alpha / 2);
+
+                    // 2. Converteer naar Quaternion
+                    const x = s1 * c2 * c3 - c1 * s2 * s3;
+                    const y = c1 * s2 * c3 + s1 * c2 * s3;
+                    const z = c1 * c2 * s3 + s1 * s2 * c3;
+                    const w = c1 * c2 * c3 - s1 * s2 * s3;
+
+                    // 3. Projecteer de camera-vector (-Z as) naar wereldcoördinaten
+                    let vx = -2 * (x * z + w * y);
+                    let vy = -2 * (y * z - w * x);
+                    
+                    // 4. Projecteer de bovenkant van de telefoon (+Y as) naar wereldcoördinaten
+                    let tx = 2 * (x * y - w * z);
+                    let ty = 1 - 2 * x * x - 2 * z * z;
+
+                    // 5. Anti Gimbal-Lock check
+                    const cameraLenSq = vx * vx + vy * vy;
+                    if (cameraLenSq < 0.2) {
+                        // Als de telefoon plat op tafel ligt, gebruik de bovenkant als wijzer
+                        heading = Math.atan2(tx, ty);
+                    } else {
+                        // Als de telefoon rechtop staat of schuin, gebruik de cameralens als wijzer
+                        heading = Math.atan2(vx, vy);
+                    }
+
+                    // Zet terug naar graden
+                    heading = heading * (180 / Math.PI);
                 }
             }
 
             if (heading !== null && !isNaN(heading)) {
-                // Compenseer voor hoe de telefoon wordt vastgehouden (portret vs landschap)
+                // Fix voor schermrotatie (Portrait / Landscape)
                 const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
-                heading = (heading + screenAngle) % 360;
-                
-                // Zorg ervoor dat heading niet negatief is
-                if (heading < 0) heading += 360;
+                heading = heading + screenAngle;
 
-                lastRawHeading = heading;
-                actueleAzimut = (lastRawHeading + sensorOffset) % 360;
+                // Normaliseren tot een schone 0-360 cirkel
+                heading = (heading + 360) % 360;
+
+                actueleAzimut = (heading + sensorOffset) % 360;
                 isMobileSensorActive = true;
                 
-                let lockStatus = hasAbsoluteSensor || event.webkitCompassHeading !== undefined ? "(GPS Locked)" : "(Relatief)";
+                let lockStatus = hasAbsoluteSensor || event.webkitCompassHeading !== undefined ? "(Q-Lock GPS)" : "(Q-Lock Relatief)";
                 serialOutput.innerText = `Kompas: ${actueleAzimut.toFixed(1)}° ${lockStatus}`;
             }
         }
@@ -464,7 +470,6 @@
                     }
                 } catch (e) { console.error(e); }
             } else {
-                // Prioriteit voor Absolute event op Android
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 btnEnableSensor.classList.add('active');
@@ -477,38 +482,8 @@
             await initSensor();
         });
 
-        document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
-            if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
-            try {
-                const port = await navigator.serial.requestPort();
-                await port.open({ baudRate: parseInt(document.getElementById('baud-rate').value) });
-                isSerialConnected = true;
-                e.target.classList.add('active');
-                const decoder = new TextDecoderStream();
-                port.readable.pipeTo(decoder.writable);
-                const reader = decoder.readable.getReader();
-                let buf = "";
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buf += value;
-                    const lines = buf.split('\n');
-                    buf = lines.pop();
-                    for (let l of lines) {
-                        if (l.includes('HDT') || l.includes('RMC')) {
-                            let p = l.split(',');
-                            if (p[1] && !isNaN(parseFloat(p[1]))) {
-                                lastRawHeading = parseFloat(p[1]);
-                                actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
-                                serialOutput.innerText = `[NMEA Live] Azimut: ${actueleAzimut.toFixed(1)}°`;
-                            }
-                        }
-                    }
-                }
-            } catch (err) { console.error(err); }
-        });
 
-        // ZOOM FUNCTIES...
+        // === ZOOM ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
             zoomVal.innerText = z.toFixed(1) + 'x';
@@ -586,93 +561,7 @@
             if (e.touches.length < 2) initialPinchDistance = null;
         });
 
-        // OPNAME FUNCTIES...
-        document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
-            if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
-            else document.exitFullscreen();
-        });
-
-        document.getElementById('btn-toggle-pip').addEventListener('click', async () => {
-            try {
-                if (document.pictureInPictureElement) await document.exitPictureInPicture();
-                else if (video.srcObject) await video.requestPictureInPicture();
-            } catch (err) { console.error(err); }
-        });
-
-        function getMergedLayersCanvas() {
-            const merged = document.createElement('canvas');
-            merged.width = viewport.clientWidth * (window.devicePixelRatio || 1);
-            merged.height = viewport.clientHeight * (window.devicePixelRatio || 1);
-            const mCtx = merged.getContext('2d');
-            mCtx.imageSmoothingEnabled = true;
-            mCtx.imageSmoothingQuality = 'high';
-
-            if (video.videoWidth > 0 && video.srcObject) {
-                mCtx.filter = getComputedStyle(video).filter;
-                mCtx.drawImage(video, 0, 0, merged.width, merged.height);
-                mCtx.filter = 'none';
-            }
-            mCtx.drawImage(hudCanvas, 0, 0);
-            return merged;
-        }
-
-        document.getElementById('btn-take-photo').addEventListener('click', () => {
-            const merged = getMergedLayersCanvas();
-            const link = document.createElement('a');
-            link.download = `Survey_Foto_${Date.now()}.png`;
-            link.href = merged.toDataURL('image/png');
-            link.click();
-            captureStatus.innerText = "Foto opgeslagen (HD)!";
-            setTimeout(() => captureStatus.innerText = "Stand-by", 2500);
-        });
-
-        let mediaRecorder, recordedChunks = [], isRecording = false;
-        const btnRecord = document.getElementById('btn-record-video');
-        btnRecord.addEventListener('click', () => {
-            if (!isRecording) {
-                const merged = document.createElement('canvas');
-                merged.width = viewport.clientWidth;
-                merged.height = viewport.clientHeight;
-                const mCtx = merged.getContext('2d');
-                const stream = merged.captureStream(30);
-
-                function renderMergedStream() {
-                    if (video.videoWidth > 0 && video.srcObject) {
-                        mCtx.filter = getComputedStyle(video).filter;
-                        mCtx.drawImage(video, 0, 0, merged.width, merged.height);
-                        mCtx.filter = 'none';
-                    }
-                    mCtx.drawImage(hudCanvas, 0, 0);
-                    if (isRecording) requestAnimationFrame(renderMergedStream);
-                }
-
-                recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `Survey_Video_${Date.now()}.webm`;
-                    a.click();
-                    captureStatus.innerText = "Video gedownload!";
-                };
-
-                isRecording = true;
-                mediaRecorder.start();
-                renderMergedStream();
-                btnRecord.classList.add('danger');
-                btnRecord.innerText = "Stop Rec";
-                captureStatus.innerText = "Opname loopt...";
-            } else {
-                isRecording = false;
-                mediaRecorder.stop();
-                btnRecord.classList.remove('danger');
-                btnRecord.innerText = "🎥 Record";
-            }
-        });
-
-        // === 6. HOOFD RENDER LOOP (INCL VISUEEL KOMPAS) ===
+        // === HOOFD RENDER LOOP ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
@@ -680,25 +569,24 @@
             const cy = h / 2;
 
             if (!isSerialConnected && !isMobileSensorActive) {
-                actueleAzimut = (actueleAzimut + 0.05) % 360; // Trage demonstratiedraai
+                actueleAzimut = (actueleAzimut + 0.05) % 360; 
             }
 
             hudCtx.clearRect(0, 0, w, h);
 
-            // --- VISUELE KOMPAS TAPE BOVENAAN ---
+            // TAPE KOMPAS BOVENAAN
             hudCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             hudCtx.fillRect(0, 0, w, 40);
 
-            const fov = 75; // Gezichtsveld voor de kompasbalk in graden
+            const fov = 75; 
             hudCtx.textAlign = 'center';
             hudCtx.font = 'bold 12px "Courier New"';
 
             for (let i = -fov; i <= fov; i++) {
                 let markAngle = (actueleAzimut + i + 360) % 360;
                 
-                // Teken elke 15 graden een markering
                 if (Math.round(markAngle) % 15 === 0) {
-                    let xPos = cx + (i * (w / (fov * 2))); // Mapping graden naar pixels
+                    let xPos = cx + (i * (w / (fov * 2))); 
                     
                     let label = "";
                     if (Math.round(markAngle) === 0 || Math.round(markAngle) === 360) label = "N";
@@ -718,7 +606,6 @@
                 }
             }
 
-            // Indicator pijl voor het kompas
             hudCtx.fillStyle = 'var(--accent-orange)';
             hudCtx.beginPath();
             hudCtx.moveTo(cx, 40);
@@ -726,8 +613,6 @@
             hudCtx.lineTo(cx + 5, 33);
             hudCtx.fill();
 
-
-            // Waarschuwing als een zonnefilter geselecteerd is
             if (filterSelector.value.includes('sun')) {
                 hudCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
                 hudCtx.fillRect(cx - 150, h - 60, 300, 30);
@@ -737,7 +622,6 @@
                 hudCtx.fillText("⚠️ WAARSCHUWING: FYSIEK LENSFILTER VEREIST", cx, h - 40);
             }
 
-            // Centraal Dradenkruis
             hudCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
             hudCtx.lineWidth = 1;
             hudCtx.beginPath();
@@ -747,7 +631,6 @@
             hudCtx.lineTo(cx, cy + 15);
             hudCtx.stroke();
 
-            // Directe aflezing naast kruisdraad
             hudCtx.fillStyle = 'var(--accent-cyan)';
             hudCtx.textAlign = 'left';
             hudCtx.font = 'bold 12px "Courier New"';
