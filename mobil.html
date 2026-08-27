@@ -301,7 +301,7 @@
 
     <script>
         // === STATE ENGINE & CONFIGURATIE ===
-        let actueleAzimut = 0.0;
+        let actueleAzimut = 90.0; // Start exact op OOST (90°)
         let sensorOffset = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
@@ -388,21 +388,16 @@
         function handleOrientation(event) {
             let heading = null;
             
-            // Markeer dat we pure kompasdata (Noord-referentie) ontvangen
             if (event.absolute || event.type === 'deviceorientationabsolute') hasAbsoluteSensor = true;
 
-            // iOS Safari levert direct het hardware kompas
             if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
                 heading = event.webkitCompassHeading;
                 hasAbsoluteSensor = true;
             } 
-            // ANDROID: QUATERNION GIMBAL-LOCK FIX
             else if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
-                // Alleen uitvoeren als we weten waar het noorden is, of als fallback
                 if (hasAbsoluteSensor || event.absolute === undefined) {
                     const degToRad = Math.PI / 180;
 
-                    // 1. Converteer Euler naar radialen (W3C Z-X-Y volgorde)
                     const alpha = event.alpha * degToRad;
                     const beta = event.beta * degToRad;
                     const gamma = event.gamma * degToRad;
@@ -414,41 +409,31 @@
                     const s2 = Math.sin(gamma / 2);
                     const s3 = Math.sin(alpha / 2);
 
-                    // 2. Converteer naar Quaternion
                     const x = s1 * c2 * c3 - c1 * s2 * s3;
                     const y = c1 * s2 * c3 + s1 * c2 * s3;
                     const z = c1 * c2 * s3 + s1 * s2 * c3;
                     const w = c1 * c2 * c3 - s1 * s2 * s3;
 
-                    // 3. Projecteer de camera-vector (-Z as) naar wereldcoördinaten
                     let vx = -2 * (x * z + w * y);
                     let vy = -2 * (y * z - w * x);
                     
-                    // 4. Projecteer de bovenkant van de telefoon (+Y as) naar wereldcoördinaten
                     let tx = 2 * (x * y - w * z);
                     let ty = 1 - 2 * x * x - 2 * z * z;
 
-                    // 5. Anti Gimbal-Lock check
                     const cameraLenSq = vx * vx + vy * vy;
                     if (cameraLenSq < 0.2) {
-                        // Als de telefoon plat op tafel ligt, gebruik de bovenkant als wijzer
                         heading = Math.atan2(tx, ty);
                     } else {
-                        // Als de telefoon rechtop staat of schuin, gebruik de cameralens als wijzer
                         heading = Math.atan2(vx, vy);
                     }
 
-                    // Zet terug naar graden
                     heading = heading * (180 / Math.PI);
                 }
             }
 
             if (heading !== null && !isNaN(heading)) {
-                // Fix voor schermrotatie (Portrait / Landscape)
                 const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
                 heading = heading + screenAngle;
-
-                // Normaliseren tot een schone 0-360 cirkel
                 heading = (heading + 360) % 360;
 
                 actueleAzimut = (heading + sensorOffset) % 360;
@@ -569,7 +554,8 @@
             const cy = h / 2;
 
             if (!isSerialConnected && !isMobileSensorActive) {
-                actueleAzimut = (actueleAzimut + 0.05) % 360; 
+                // Rotatie van Oost naar West via Zuid naar Noord
+                actueleAzimut = (actueleAzimut + 0.15) % 360; 
             }
 
             hudCtx.clearRect(0, 0, w, h);
