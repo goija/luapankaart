@@ -173,12 +173,9 @@
 
         /* === VOLLEDIGE SPECTRALE & SENSOR FILTERSET === */
         .filter-none        { filter: contrast(110%) brightness(102%); }
-        
-        /* Zwaar aangepaste zonnefilters om effect te forceren */
         .filter-sun-solar  { filter: brightness(40%) contrast(400%) sepia(100%) hue-rotate(5deg) saturate(300%); }
         .filter-sun-halpha { filter: brightness(35%) contrast(500%) sepia(100%) hue-rotate(330deg) saturate(600%) blur(0.5px); }
         .filter-sun-nd     { filter: brightness(20%) contrast(500%) sepia(100%) hue-rotate(-20deg) saturate(400%); } 
-
         .filter-moon-lumi  { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
         .filter-moon-lpr   { filter: contrast(200%) brightness(110%) hue-rotate(200deg) saturate(180%) invert(5%); }
         .filter-moon-ir    { filter: grayscale(100%) brightness(140%) contrast(220%); }
@@ -247,25 +244,26 @@
             </select>
             
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa; margin-top:4px;">
-                <span>Zoom Presets:</span>
+                <span>Zoom Presets (tot 100x):</span>
             </div>
             
             <div class="zoom-grid">
                 <button class="zoom-btn" data-zoom="1">1x</button>
-                <button class="zoom-btn" data-zoom="2">2x</button>
-                <button class="zoom-btn" data-zoom="5">5x</button>
                 <button class="zoom-btn" data-zoom="10">10x</button>
-                <button class="zoom-btn" data-zoom="15">15x</button>
+                <button class="zoom-btn" data-zoom="25">25x</button>
+                <button class="zoom-btn" data-zoom="50">50x</button>
+                <button class="zoom-btn" data-zoom="100">100x</button>
             </div>
 
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
                 <span>Actuele Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1x</span>
             </div>
-            <input type="range" id="zoom-slider" min="1" max="15" step="0.1" value="1">
+            <!-- Max slider limiet verhoogd naar 100 -->
+            <input type="range" id="zoom-slider" min="1" max="100" step="0.5" value="1">
             
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
                 <input type="checkbox" id="chk-auto-sharpness" checked style="width:auto; margin:0;">
-                <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur</label>
+                <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur (Pixelation)</label>
             </div>
         </div>
 
@@ -500,6 +498,7 @@
             feedWrapper.style.transform = `scale(${z})`;
             video.className = filterSelector.value;
 
+            // Boven de 8x wordt het extreem pixelated, de browser mag dan geen vervaging meer toepassen
             if (chkAutoSharpness.checked && z > 1.5) {
                 video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
             } else {
@@ -521,11 +520,13 @@
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
             let currentZoom = parseFloat(zoomSlider.value);
-            const zoomStep = 0.2; 
+            // Sneller inzoomen met het scrollwieltje nu de limiet 100x is
+            const zoomStep = 1.5; 
             if (e.deltaY < 0) currentZoom += zoomStep;
             else currentZoom -= zoomStep;
             
-            currentZoom = Math.max(1, Math.min(15, currentZoom));
+            // Limiet geüpdatet naar 100x
+            currentZoom = Math.max(1, Math.min(100, currentZoom));
             zoomSlider.value = currentZoom.toFixed(1);
             applySharpZoom();
         }, { passive: false });
@@ -553,7 +554,8 @@
                 const currentDistance = getPinchDistance(e);
                 const scale = currentDistance / initialPinchDistance;
                 let newZoom = initialZoomValue * scale;
-                newZoom = Math.max(1, Math.min(15, newZoom));
+                // Limiet geüpdatet naar 100x
+                newZoom = Math.max(1, Math.min(100, newZoom));
                 zoomSlider.value = newZoom.toFixed(1);
                 applySharpZoom();
             }
@@ -661,7 +663,6 @@
 
             hudCtx.clearRect(0, 0, w, h);
 
-            // Waarschuwing als een zonnefilter geselecteerd is
             if (filterSelector.value.includes('sun')) {
                 hudCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
                 hudCtx.fillRect(cx - 150, 20, 300, 30);
@@ -669,7 +670,7 @@
                 hudCtx.font = 'bold 12px "Segoe UI", sans-serif';
                 hudCtx.textAlign = 'center';
                 hudCtx.fillText("⚠️ WAARSCHUWING: FYSIEK LENSFILTER VEREIST", cx, 40);
-                hudCtx.textAlign = 'left'; // Reset
+                hudCtx.textAlign = 'left';
             }
 
             hudCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
