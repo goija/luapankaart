@@ -119,28 +119,6 @@
             line-height: 1.25;
         }
 
-        .layer-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #2b2b36;
-            padding: 3px 5px;
-            border-radius: 3px;
-            margin-bottom: 3px;
-            font-size: 8.5px;
-            border-left: 2px solid #666;
-        }
-
-        .layer-toggle.active {
-            border-left-color: var(--accent-green);
-        }
-
-        .layer-toggle input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-            cursor: pointer;
-        }
-
         #viewport {
             flex-grow: 1;
             position: relative;
@@ -181,17 +159,11 @@
             height: 100%;
             pointer-events: none;
             display: block;
+            z-index: 2;
         }
 
-        #layer-lidar    { z-index: 2; }
-        #layer-shadow   { z-index: 3; }
-        #layer-hydro    { z-index: 4; }
-        #layer-survey   { z-index: 5; }
-        #layer-scilab   { z-index: 6; }
-        #layer-compass  { z-index: 7; }
-
         /* === VOLLEDIGE SPECTRALE & SENSOR FILTERSET === */
-        .filter-none       { filter: contrast(110%) brightness(102%); }
+        .filter-none        { filter: contrast(110%) brightness(102%); }
         
         /* Zonne- & Eclipsfilters */
         .filter-sun-solar  { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
@@ -221,7 +193,7 @@
     <div id="sidebar">
         <h2>SURVEY & LIDAR HUD</h2>
         
-        <!-- 1. LIVEFEED STREAMS (BOVENAAN) -->
+        <!-- 1. LIVEFEED STREAMS -->
         <div class="control-group">
             <label>1. Live Streams & Viewport</label>
             <div class="btn-grid">
@@ -234,14 +206,10 @@
             </div>
         </div>
 
-        <!-- 2. SENSOREN & DYNAMISCHE KALIBRATIE (ERONDER) -->
+        <!-- 2. SENSOREN -->
         <div class="control-group">
-            <label>2. Sensoren & Kalibratie</label>
+            <label>2. Sensoren (Azimut)</label>
             <button id="btn-enable-sensor">📱 Activeer Sensor</button>
-            <div class="btn-grid">
-                <button id="btn-snap-north">⬆ Kalibreer Noord (0°)</button>
-                <button id="btn-snap-south">⬇ Kalibreer Zuid (180°)</button>
-            </div>
             <select id="baud-rate">
                 <option value="4800">4800 Baud</option>
                 <option value="9600">9600 Baud</option>
@@ -252,38 +220,9 @@
             <div class="data-display" id="serial-output">Sensor: Stand-by</div>
         </div>
 
-        <!-- 3. LAAGBEHEER -->
+        <!-- 3. LIDAR SCANS & HISTORISCHE MATEN -->
         <div class="control-group">
-            <label>3. Actieve Lagen</label>
-            <div class="layer-toggle active">
-                <span>1: Kompas Ribbon</span>
-                <input type="checkbox" id="chk-layer-compass" checked>
-            </div>
-            <div class="layer-toggle active">
-                <span>2: LiDAR Pointcloud</span>
-                <input type="checkbox" id="chk-layer-lidar" checked>
-            </div>
-            <div class="layer-toggle active">
-                <span>3: Scilab 3D Matrix</span>
-                <input type="checkbox" id="chk-layer-scilab" checked>
-            </div>
-            <div class="layer-toggle active">
-                <span>4: Landmeting (Roeden/Ketting)</span>
-                <input type="checkbox" id="chk-layer-survey" checked>
-            </div>
-            <div class="layer-toggle active">
-                <span>5: Zeemeting (Mijlen/Vademen)</span>
-                <input type="checkbox" id="chk-layer-hydro" checked>
-            </div>
-            <div class="layer-toggle active">
-                <span>6: Schaduw Gnomon</span>
-                <input type="checkbox" id="chk-layer-shadow" checked>
-            </div>
-        </div>
-
-        <!-- 4. LIDAR SCANS & HISTORISCHE MATEN -->
-        <div class="control-group">
-            <label>4. LiDAR Engine & Historische Maten</label>
+            <label>3. LiDAR Engine & Historische Maten</label>
             <button id="btn-toggle-lidar-state" class="active">⚡ LiDAR: AAN</button>
             <select id="geo-unit-selector">
                 <optgroup label="🌊 Historische Zeemijlen / Maritiem">
@@ -310,9 +249,9 @@
             <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
         </div>
 
-        <!-- 5. VOLLEDIG SPECTRUM FILTERS & ZOOM TOT 1500X (START 1X) -->
+        <!-- 4. VOLLEDIG SPECTRUM FILTERS & ZOOM (START 10X) -->
         <div class="control-group">
-            <label>5. Spectraalfilters & Sharp-Zoom (tot 1500x)</label>
+            <label>4. Spectraalfilters & Sharp-Zoom</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard (Scherpte Boost)</option>
                 
@@ -337,18 +276,18 @@
             </select>
             
             <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1.0x (1x Start)</span>
+                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">10x (Sharp)</span>
             </div>
-            <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="1">
+            <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="10">
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
                 <input type="checkbox" id="chk-auto-sharpness" checked style="width:auto; margin:0;">
                 <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur & Unsharp Mask</label>
             </div>
         </div>
 
-        <!-- 6. CAPTURE & RECORDING -->
+        <!-- 5. CAPTURE & RECORDING -->
         <div class="control-group">
-            <label>6. Opname</label>
+            <label>5. Opname</label>
             <div class="btn-grid">
                 <button id="btn-take-photo">📸 Foto</button>
                 <button id="btn-record-video">🎥 Record</button>
@@ -363,11 +302,6 @@
             <video id="video-feed" class="filter-none" autoplay playsinline muted></video>
             
             <canvas id="layer-lidar" class="hud-layer"></canvas>
-            <canvas id="layer-shadow" class="hud-layer"></canvas>
-            <canvas id="layer-hydro" class="hud-layer"></canvas>
-            <canvas id="layer-survey" class="hud-layer"></canvas>
-            <canvas id="layer-scilab" class="hud-layer"></canvas>
-            <canvas id="layer-compass" class="hud-layer"></canvas>
         </div>
     </div>
 
@@ -402,18 +336,10 @@
         const btnToggleCamera = document.getElementById('btn-toggle-camera');
         const btnToggleScreen = document.getElementById('btn-toggle-screen');
         const btnEnableSensor = document.getElementById('btn-enable-sensor');
-        const btnSnapNorth = document.getElementById('btn-snap-north');
-        const btnSnapSouth = document.getElementById('btn-snap-south');
         const btnToggleLidarState = document.getElementById('btn-toggle-lidar-state');
 
-        const layers = {
-            compass: { canvas: document.getElementById('layer-compass'), ctx: document.getElementById('layer-compass').getContext('2d'), chk: document.getElementById('chk-layer-compass') },
-            lidar:   { canvas: document.getElementById('layer-lidar'),   ctx: document.getElementById('layer-lidar').getContext('2d'),   chk: document.getElementById('chk-layer-lidar') },
-            scilab:  { canvas: document.getElementById('layer-scilab'),  ctx: document.getElementById('layer-scilab').getContext('2d'),  chk: document.getElementById('chk-layer-scilab') },
-            survey:  { canvas: document.getElementById('layer-survey'),  ctx: document.getElementById('layer-survey').getContext('2d'),  chk: document.getElementById('chk-layer-survey') },
-            hydro:   { canvas: document.getElementById('layer-hydro'),   ctx: document.getElementById('layer-hydro').getContext('2d'),   chk: document.getElementById('chk-layer-hydro') },
-            shadow:  { canvas: document.getElementById('layer-shadow'),  ctx: document.getElementById('layer-shadow').getContext('2d'),  chk: document.getElementById('chk-layer-shadow') }
-        };
+        const lidarCanvas = document.getElementById('layer-lidar');
+        const lidarCtx = lidarCanvas.getContext('2d');
 
         const HISTORICAL_UNITS = {
             holland_zeemijl: { factor: 5555.55, name: "Holl. Zeemijl", code: "HZM" },
@@ -434,33 +360,17 @@
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
 
-            Object.values(layers).forEach(l => {
-                l.canvas.width = w * dpr;
-                l.canvas.height = h * dpr;
-                l.canvas.style.width = `${w}px`;
-                l.canvas.style.height = `${h}px`;
-                l.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                l.ctx.scale(dpr, dpr);
-                l.ctx.imageSmoothingEnabled = true;
-                l.ctx.imageSmoothingQuality = 'high';
-            });
+            lidarCanvas.width = w * dpr;
+            lidarCanvas.height = h * dpr;
+            lidarCanvas.style.width = `${w}px`;
+            lidarCanvas.style.height = `${h}px`;
+            lidarCtx.setTransform(1, 0, 0, 1, 0, 0);
+            lidarCtx.scale(dpr, dpr);
+            lidarCtx.imageSmoothingEnabled = true;
+            lidarCtx.imageSmoothingQuality = 'high';
         }
         window.addEventListener('resize', resizeAllLayers);
         resizeAllLayers();
-
-        Object.values(layers).forEach(layer => {
-            layer.chk.addEventListener('change', (e) => {
-                const parent = e.target.closest('.layer-toggle');
-                if (e.target.checked) {
-                    parent.classList.add('active');
-                } else {
-                    parent.classList.remove('active');
-                    const w = viewport.clientWidth;
-                    const h = viewport.clientHeight;
-                    layer.ctx.clearRect(0, 0, w, h);
-                }
-            });
-        });
 
         // === 1. LIVEFEED STREAMS ===
         function stopCamera() {
@@ -524,7 +434,7 @@
             }
         });
 
-        // === 2. DYNAMISCHE 3D ORIËNTATIE & KOMPAS ENGINE ===
+        // === 2. DYNAMISCHE 3D ORIËNTATIE ===
         function computeTrueHeading(e) {
             if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
                 return e.webkitCompassHeading;
@@ -586,27 +496,7 @@
 
         btnEnableSensor.addEventListener('click', async () => {
             sensorOffset = 0.0;
-            btnSnapNorth.classList.remove('active');
-            btnSnapSouth.classList.remove('active');
             await initSensor();
-        });
-
-        btnSnapNorth.addEventListener('click', async () => {
-            await initSensor();
-            sensorOffset = (360 - lastRawHeading) % 360;
-            actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
-            btnSnapNorth.classList.add('active');
-            btnSnapSouth.classList.remove('active');
-            serialOutput.innerText = `[Gekalibreerd Noord] Live: ${actueleAzimut.toFixed(1)}°`;
-        });
-
-        btnSnapSouth.addEventListener('click', async () => {
-            await initSensor();
-            sensorOffset = (180 - lastRawHeading + 360) % 360;
-            actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
-            btnSnapSouth.classList.add('active');
-            btnSnapNorth.classList.remove('active');
-            serialOutput.innerText = `[Gekalibreerd Zuid] Live: ${actueleAzimut.toFixed(1)}°`;
         });
 
         if (window.DeviceOrientationEvent) {
@@ -645,7 +535,7 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 3. BEGINSTAND 1X ZOOM & ADAPTIEVE SHARP ENGINE ===
+        // === 3. BEGINSTAND 10X ZOOM & ADAPTIEVE SHARP ENGINE ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
             zoomVal.innerText = z === 1 ? '1.0x (Start)' : (z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)');
@@ -659,7 +549,6 @@
 
             feedWrapper.style.transform = `scale(${z})`;
 
-            // Combineer de gekozen CSS spectrale filterklasse met adaptieve scherpte
             const selectedFilterClass = filterSelector.value;
             video.className = selectedFilterClass;
 
@@ -670,7 +559,8 @@
             }
         }
 
-        zoomSlider.value = 1;
+        // Direct naar 10x
+        zoomSlider.value = 10;
         applySharpZoom();
 
         zoomSlider.addEventListener('input', applySharpZoom);
@@ -688,9 +578,6 @@
                 btnToggleLidarState.classList.remove('active');
                 btnToggleLidarState.classList.add('danger');
                 btnToggleLidarState.innerText = '⭕ LiDAR: UIT';
-                const w = viewport.clientWidth;
-                const h = viewport.clientHeight;
-                layers.lidar.ctx.clearRect(0, 0, w, h);
             }
             updateLidarMetrics();
         });
@@ -740,10 +627,8 @@
                 mCtx.filter = 'none';
             }
 
-            const layerKeys = ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'];
-            layerKeys.forEach(k => {
-                if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
-            });
+            if (isLidarActive) mCtx.drawImage(lidarCanvas, 0, 0);
+
             return merged;
         }
 
@@ -773,9 +658,8 @@
                         mCtx.drawImage(video, 0, 0, merged.width, merged.height);
                         mCtx.filter = 'none';
                     }
-                    ['lidar', 'shadow', 'hydro', 'survey', 'scilab', 'compass'].forEach(k => {
-                        if (layers[k].chk.checked) mCtx.drawImage(layers[k].canvas, 0, 0);
-                    });
+                    if (isLidarActive) mCtx.drawImage(lidarCanvas, 0, 0);
+                    
                     if (isRecording) requestAnimationFrame(renderMergedStream);
                 }
 
@@ -820,72 +704,11 @@
             const currentUnit = HISTORICAL_UNITS[geoUnitSelector.value];
             const currentHistoricalVal = (currentLidarDist / currentUnit.factor).toFixed(2);
 
-            // --- LAAG 1: KOMPAS BOVENBALK ---
-            if (layers.compass.chk.checked) {
-                const cCtx = layers.compass.ctx;
-                cCtx.clearRect(0, 0, w, h);
+            lidarCtx.clearRect(0, 0, w, h);
 
-                cCtx.fillStyle = 'rgba(15, 16, 22, 0.75)';
-                cCtx.fillRect(0, 0, w, 40);
-                cCtx.strokeStyle = 'rgba(255, 107, 74, 0.5)';
-                cCtx.beginPath();
-                cCtx.moveTo(0, 40); cCtx.lineTo(w, 40);
-                cCtx.stroke();
-
-                const pxPerDeg = w / CAMERA_FOV;
-                const minDeg = Math.floor(actueleAzimut - CAMERA_FOV / 2);
-                const maxDeg = Math.ceil(actueleAzimut + CAMERA_FOV / 2);
-
-                for (let d = minDeg; d <= maxDeg; d++) {
-                    let normD = (d + 3600) % 360;
-                    let x = cx + ((d - actueleAzimut) * pxPerDeg);
-
-                    if (normD % 15 === 0) {
-                        cCtx.beginPath();
-                        cCtx.moveTo(x, 22); cCtx.lineTo(x, 38);
-                        cCtx.strokeStyle = '#fff';
-                        cCtx.lineWidth = 1.5;
-                        cCtx.stroke();
-
-                        let label = `${normD}°`;
-                        if (normD === 0) label = "N";
-                        else if (normD === 90) label = "O";
-                        else if (normD === 180) label = "Z";
-                        else if (normD === 270) label = "W";
-
-                        cCtx.fillStyle = (normD % 90 === 0) ? 'var(--accent-orange)' : '#ccc';
-                        cCtx.font = 'bold 9px "Courier New"';
-                        cCtx.textAlign = 'center';
-                        cCtx.fillText(label, x, 16);
-                    } else if (normD % 5 === 0) {
-                        cCtx.beginPath();
-                        cCtx.moveTo(x, 28); cCtx.lineTo(x, 38);
-                        cCtx.strokeStyle = 'rgba(255,255,255,0.4)';
-                        cCtx.lineWidth = 1;
-                        cCtx.stroke();
-                    }
-                }
-
-                cCtx.beginPath();
-                cCtx.moveTo(cx - 6, 40);
-                cCtx.lineTo(cx + 6, 40);
-                cCtx.lineTo(cx, 48);
-                cCtx.closePath();
-                cCtx.fillStyle = 'var(--accent-orange)';
-                cCtx.fill();
-
-                cCtx.fillStyle = '#fff';
-                cCtx.font = 'bold 13px "Courier New"';
-                cCtx.textAlign = 'center';
-                cCtx.fillText(`${actueleAzimut.toFixed(1)}°`, cx, 62);
-                cCtx.textAlign = 'left';
-            }
-
-            // --- LAAG 2: LIDAR POINTCLOUD & METINGEN ---
-            if (layers.lidar.chk.checked && isLidarActive) {
-                const lCtx = layers.lidar.ctx;
-                lCtx.clearRect(0, 0, w, h);
-
+            // --- LIDAR POINTCLOUD & METINGEN ---
+            if (isLidarActive) {
+                const lCtx = lidarCtx;
                 lCtx.strokeStyle = 'rgba(0, 245, 212, 0.4)';
                 lCtx.lineWidth = 1.2;
 
@@ -932,110 +755,6 @@
                 lCtx.fillText(`METRISCH : ${currentLidarDist.toFixed(1)} m`, cx + 42, cy - 6);
                 lCtx.fillStyle = 'var(--accent-yellow)';
                 lCtx.fillText(`HISTORISCH: ${currentHistoricalVal} ${currentUnit.code} (${currentUnit.name})`, cx + 42, cy + 8);
-            }
-
-            // --- LAAG 3: SCILAB 3D ROTATIE MATRIX ---
-            if (layers.scilab.chk.checked) {
-                const sCtx = layers.scilab.ctx;
-                sCtx.clearRect(0, 0, w, h);
-
-                sCtx.fillStyle = 'rgba(15, 16, 22, 0.85)';
-                sCtx.fillRect(15, 75, 190, 80);
-                sCtx.strokeStyle = 'var(--accent-purple)';
-                sCtx.strokeRect(15, 75, 190, 80);
-
-                sCtx.fillStyle = 'var(--accent-purple)';
-                sCtx.font = 'bold 9px "Courier New"';
-                sCtx.fillText(`SCILAB R_z(θ) MATRIX`, 22, 90);
-
-                const rad = actueleAzimut * (Math.PI / 180);
-                const r00 = Math.cos(rad).toFixed(2);
-                const r01 = (-Math.sin(rad)).toFixed(2);
-                const r10 = Math.sin(rad).toFixed(2);
-                const r11 = Math.cos(rad).toFixed(2);
-
-                sCtx.fillStyle = '#aaa';
-                sCtx.font = '8.5px "Courier New"';
-                sCtx.fillText(`[ ${r00}  ${r01}   0 ]`, 22, 106);
-                sCtx.fillText(`[ ${r10}  ${r11}   0 ]`, 22, 118);
-                sCtx.fillText(`[ 0.00  0.00   1 ]`, 22, 130);
-                sCtx.fillStyle = 'var(--accent-green)';
-                sCtx.fillText(`det=1.00 | FOV=${CAMERA_FOV}°`, 22, 146);
-            }
-
-            // --- LAAG 4: LANDMETINGEN ---
-            if (layers.survey.chk.checked) {
-                const svCtx = layers.survey.ctx;
-                svCtx.clearRect(0, 0, w, h);
-
-                svCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
-                svCtx.lineWidth = 1.2;
-
-                svCtx.beginPath();
-                svCtx.moveTo(cx - 50, cy); svCtx.lineTo(cx + 50, cy);
-                svCtx.moveTo(cx, cy - 50); svCtx.lineTo(cx + 50, cy);
-                svCtx.stroke();
-
-                svCtx.beginPath();
-                svCtx.moveTo(cx - 20, cy - 25); svCtx.lineTo(cx + 20, cy - 25);
-                svCtx.moveTo(cx - 20, cy + 25); svCtx.lineTo(cx + 20, cy + 25);
-                svCtx.stroke();
-
-                svCtx.fillStyle = 'rgba(0, 245, 212, 0.9)';
-                svCtx.font = 'bold 9px "Courier New"';
-                svCtx.fillText(`📐 LANDMEETKRUIS: RIJNLAND & GUNTER METING`, 15, h - 50);
-            }
-
-            // --- LAAG 5: ZEEMETINGEN ---
-            if (layers.hydro.chk.checked) {
-                const hCtx = layers.hydro.ctx;
-                hCtx.clearRect(0, 0, w, h);
-
-                const waterY = h - 30;
-                hCtx.fillStyle = 'rgba(0, 187, 249, 0.2)';
-                hCtx.fillRect(0, waterY, w, 30);
-                hCtx.strokeStyle = 'var(--accent-blue)';
-                hCtx.lineWidth = 1.5;
-                hCtx.beginPath();
-                hCtx.moveTo(0, waterY); hCtx.lineTo(w, waterY);
-                hCtx.stroke();
-
-                const vademVal = (currentLidarDist / 1.698).toFixed(1);
-                hCtx.fillStyle = 'var(--accent-blue)';
-                hCtx.font = 'bold 9px "Courier New"';
-                hCtx.fillText(`🌊 ZEEMETING: ${vademVal} Amst. Vademen | ${currentHistoricalVal} ${currentUnit.code}`, 15, waterY + 18);
-            }
-
-            // --- LAAG 6: GNOMON SCHADUWPROJECTIE ---
-            if (layers.shadow.chk.checked) {
-                const shCtx = layers.shadow.ctx;
-                shCtx.clearRect(0, 0, w, h);
-
-                const shadowAzimut = (180.0 + 45.0) % 360;
-                let deltaShadow = shadowAzimut - actueleAzimut;
-                if (deltaShadow > 180) deltaShadow -= 360;
-                if (deltaShadow < -180) deltaShadow += 360;
-
-                if (Math.abs(deltaShadow) <= CAMERA_FOV / 2) {
-                    const xShadow = cx + (deltaShadow * (w / CAMERA_FOV));
-
-                    shCtx.beginPath();
-                    shCtx.moveTo(xShadow, cy);
-                    shCtx.lineTo(xShadow - 30, h);
-                    shCtx.lineTo(xShadow + 30, h);
-                    shCtx.closePath();
-                    shCtx.fillStyle = 'rgba(254, 228, 64, 0.15)';
-                    shCtx.fill();
-
-                    shCtx.beginPath();
-                    shCtx.moveTo(xShadow, cy);
-                    shCtx.lineTo(xShadow, h);
-                    shCtx.strokeStyle = 'var(--accent-yellow)';
-                    shCtx.lineWidth = 1.5;
-                    shCtx.setLineDash([6, 5]);
-                    shCtx.stroke();
-                    shCtx.setLineDash([]);
-                }
             }
 
             requestAnimationFrame(drawAllLayers);
