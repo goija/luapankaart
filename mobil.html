@@ -181,7 +181,6 @@
         .filter-moon-lpr   { filter: contrast(200%) brightness(110%) hue-rotate(200deg) saturate(180%) invert(5%); }
         .filter-moon-ir    { filter: grayscale(100%) brightness(140%) contrast(220%); }
         
-        /* Nieuwe Sterren & Satellieten Filters */
         .filter-astro-stars { filter: contrast(450%) brightness(160%) saturate(70%); }
         .filter-astro-sat   { filter: grayscale(100%) contrast(600%) brightness(180%); }
         .filter-astro-nebula { filter: contrast(350%) brightness(140%) saturate(400%) hue-rotate(290deg); }
@@ -217,7 +216,7 @@
 
         <div class="control-group">
             <label>2. Sensoren (Azimut)</label>
-            <button id="btn-enable-sensor">📱 Activeer Sensor</button>
+            <button id="btn-enable-sensor">📱 Activeer Kompas</button>
             <select id="baud-rate">
                 <option value="4800">4800 Baud</option>
                 <option value="9600">9600 Baud</option>
@@ -307,6 +306,7 @@
         let lastRawHeading = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
+        let hasAbsoluteSensor = false;
 
         let cameraStream = null;
         let screenStream = null;
@@ -349,6 +349,7 @@
         window.addEventListener('resize', resizeAllLayers);
         resizeAllLayers();
 
+        // CAMERA FUNCTIES...
         function stopCamera() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
@@ -410,38 +411,45 @@
             }
         });
 
-        function computeTrueHeading(e) {
-            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) return e.webkitCompassHeading;
-            if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
-                const degToRad = Math.PI / 180;
-                const alpha = e.alpha * degToRad;
-                const beta = e.beta * degToRad;
-                const gamma = e.gamma * degToRad;
 
-                const cA = Math.cos(alpha), sA = Math.sin(alpha);
-                const cB = Math.cos(beta),  sB = Math.sin(beta);
-                const cG = Math.cos(gamma), sG = Math.sin(gamma);
-
-                const rA = -cA * sG - sA * sB * cG;
-                const rB = -sA * sG + cA * sB * cG;
-
-                let compassHeading = Math.atan2(rA, rB) * (180 / Math.PI);
-                if (compassHeading < 0) compassHeading += 360;
-
-                const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
-                compassHeading = (compassHeading + screenAngle) % 360;
-                return compassHeading;
-            }
-            return null;
-        }
-
+        // === VERNIEUWDE KOMPAS LOGICA (ANTI GIMBAL-LOCK) ===
         function handleOrientation(event) {
-            const heading = computeTrueHeading(event);
+            let heading = null;
+            
+            // Markeer of we absolute data (noord-referentie) binnenkrijgen
+            if (event.absolute || event.type === 'deviceorientationabsolute') {
+                hasAbsoluteSensor = true;
+            }
+
+            // iOS (Safari) geeft direct een betrouwbaar kompas door
+            if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+                heading = event.webkitCompassHeading;
+            } 
+            // Android (Chrome): Gebruik de absolute Alpha. Simpel en voorkomt as-spinning (gimbal lock).
+            else if (event.alpha !== null) {
+                // Als we geen absolute data hebben, klopt de hoek niet met het echte noorden.
+                // We accepteren relatieve alpha alleen als fallback of als absolute niet bestaat.
+                if (hasAbsoluteSensor || event.absolute === undefined) {
+                    // Alpha draait tegen de klok in (0 = Noord, 90 = West).
+                    // We converteren dit naar een standaard kompas (0 = Noord, 90 = Oost).
+                    heading = 360 - event.alpha;
+                }
+            }
+
             if (heading !== null && !isNaN(heading)) {
+                // Compenseer voor hoe de telefoon wordt vastgehouden (portret vs landschap)
+                const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
+                heading = (heading + screenAngle) % 360;
+                
+                // Zorg ervoor dat heading niet negatief is
+                if (heading < 0) heading += 360;
+
                 lastRawHeading = heading;
-                actueleAzimut = (lastRawHeading + sensorOffset + 360) % 360;
+                actueleAzimut = (lastRawHeading + sensorOffset) % 360;
                 isMobileSensorActive = true;
-                serialOutput.innerText = `[Live Sensor] Azimut: ${actueleAzimut.toFixed(1)}°`;
+                
+                let lockStatus = hasAbsoluteSensor || event.webkitCompassHeading !== undefined ? "(GPS Locked)" : "(Relatief)";
+                serialOutput.innerText = `Kompas: ${actueleAzimut.toFixed(1)}° ${lockStatus}`;
             }
         }
 
@@ -452,14 +460,15 @@
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
                         btnEnableSensor.classList.add('active');
-                        btnEnableSensor.innerText = '📱 Sensor Actief';
+                        btnEnableSensor.innerText = '📱 Kompas Actief';
                     }
                 } catch (e) { console.error(e); }
             } else {
+                // Prioriteit voor Absolute event op Android
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 btnEnableSensor.classList.add('active');
-                btnEnableSensor.innerText = '📱 Sensor Actief';
+                btnEnableSensor.innerText = '📱 Kompas Actief';
             }
         }
 
@@ -499,6 +508,7 @@
             } catch (err) { console.error(err); }
         });
 
+        // ZOOM FUNCTIES...
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
             zoomVal.innerText = z.toFixed(1) + 'x';
@@ -576,6 +586,7 @@
             if (e.touches.length < 2) initialPinchDistance = null;
         });
 
+        // OPNAME FUNCTIES...
         document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
             else document.exitFullscreen();
@@ -661,7 +672,7 @@
             }
         });
 
-        // === 6. HOOFD RENDER LOOP ===
+        // === 6. HOOFD RENDER LOOP (INCL VISUEEL KOMPAS) ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
@@ -669,21 +680,64 @@
             const cy = h / 2;
 
             if (!isSerialConnected && !isMobileSensorActive) {
-                actueleAzimut = (actueleAzimut + 0.03) % 360;
+                actueleAzimut = (actueleAzimut + 0.05) % 360; // Trage demonstratiedraai
             }
 
             hudCtx.clearRect(0, 0, w, h);
 
+            // --- VISUELE KOMPAS TAPE BOVENAAN ---
+            hudCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            hudCtx.fillRect(0, 0, w, 40);
+
+            const fov = 75; // Gezichtsveld voor de kompasbalk in graden
+            hudCtx.textAlign = 'center';
+            hudCtx.font = 'bold 12px "Courier New"';
+
+            for (let i = -fov; i <= fov; i++) {
+                let markAngle = (actueleAzimut + i + 360) % 360;
+                
+                // Teken elke 15 graden een markering
+                if (Math.round(markAngle) % 15 === 0) {
+                    let xPos = cx + (i * (w / (fov * 2))); // Mapping graden naar pixels
+                    
+                    let label = "";
+                    if (Math.round(markAngle) === 0 || Math.round(markAngle) === 360) label = "N";
+                    else if (Math.round(markAngle) === 90) label = "O";
+                    else if (Math.round(markAngle) === 180) label = "Z";
+                    else if (Math.round(markAngle) === 270) label = "W";
+                    else label = Math.round(markAngle).toString();
+
+                    hudCtx.fillStyle = (label.length === 1) ? 'var(--accent-orange)' : 'var(--accent-cyan)';
+                    hudCtx.fillText(label, xPos, 25);
+                    
+                    hudCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    hudCtx.beginPath();
+                    hudCtx.moveTo(xPos, 30);
+                    hudCtx.lineTo(xPos, 40);
+                    hudCtx.stroke();
+                }
+            }
+
+            // Indicator pijl voor het kompas
+            hudCtx.fillStyle = 'var(--accent-orange)';
+            hudCtx.beginPath();
+            hudCtx.moveTo(cx, 40);
+            hudCtx.lineTo(cx - 5, 33);
+            hudCtx.lineTo(cx + 5, 33);
+            hudCtx.fill();
+
+
+            // Waarschuwing als een zonnefilter geselecteerd is
             if (filterSelector.value.includes('sun')) {
                 hudCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-                hudCtx.fillRect(cx - 150, 20, 300, 30);
+                hudCtx.fillRect(cx - 150, h - 60, 300, 30);
                 hudCtx.fillStyle = '#fff';
                 hudCtx.font = 'bold 12px "Segoe UI", sans-serif';
                 hudCtx.textAlign = 'center';
-                hudCtx.fillText("⚠️ WAARSCHUWING: FYSIEK LENSFILTER VEREIST", cx, 40);
-                hudCtx.textAlign = 'left';
+                hudCtx.fillText("⚠️ WAARSCHUWING: FYSIEK LENSFILTER VEREIST", cx, h - 40);
             }
 
+            // Centraal Dradenkruis
             hudCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
             hudCtx.lineWidth = 1;
             hudCtx.beginPath();
@@ -693,9 +747,11 @@
             hudCtx.lineTo(cx, cy + 15);
             hudCtx.stroke();
 
+            // Directe aflezing naast kruisdraad
             hudCtx.fillStyle = 'var(--accent-cyan)';
+            hudCtx.textAlign = 'left';
             hudCtx.font = 'bold 12px "Courier New"';
-            hudCtx.fillText(`AZIMUT: ${actueleAzimut.toFixed(1)}°`, cx + 25, cy + 5);
+            hudCtx.fillText(`AZ: ${actueleAzimut.toFixed(1)}°`, cx + 20, cy + 5);
 
             requestAnimationFrame(drawAllLayers);
         }
