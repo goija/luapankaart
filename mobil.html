@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geodetische LiDAR & Hydrografische Metingen HUD</title>
+    <title>Geodetische & Hydrografische HUD</title>
     <style>
         :root {
             --bg-dark: #1e1e24;
@@ -64,6 +64,14 @@
             grid-template-columns: 1fr 1fr;
             gap: 4px;
             margin-bottom: 3px;
+        }
+
+        /* Specifieke grid voor de zoomknoppen */
+        .zoom-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            margin-bottom: 4px;
         }
 
         button {
@@ -164,18 +172,12 @@
 
         /* === VOLLEDIGE SPECTRALE & SENSOR FILTERSET === */
         .filter-none        { filter: contrast(110%) brightness(102%); }
-        
-        /* Zonne- & Eclipsfilters */
         .filter-sun-solar  { filter: contrast(240%) brightness(85%) sepia(85%) hue-rotate(-20deg) saturate(320%); }
         .filter-sun-halpha { filter: contrast(300%) brightness(70%) saturate(600%) hue-rotate(330deg) drop-shadow(0 0 4px #ff0033); }
         .filter-sun-nd     { filter: brightness(35%) contrast(350%) grayscale(40%) sepia(30%); }
-
-        /* Maan- & Nachtfilters */
         .filter-moon-lumi  { filter: contrast(170%) brightness(125%) hue-rotate(180deg) saturate(35%); }
         .filter-moon-lpr   { filter: contrast(200%) brightness(110%) hue-rotate(200deg) saturate(180%) invert(5%); }
         .filter-moon-ir    { filter: grayscale(100%) brightness(140%) contrast(220%); }
-
-        /* Sensor- & Militair / Meetfilters */
         .filter-night-gen3 { filter: brightness(145%) contrast(200%) sepia(100%) hue-rotate(80deg) saturate(450%); }
         .filter-flir-iron  { filter: contrast(260%) brightness(95%) saturate(400%) hue-rotate(260deg) invert(20%); }
         .filter-flir-white { filter: grayscale(100%) invert(100%) contrast(280%) brightness(115%); }
@@ -191,7 +193,7 @@
 <body>
 
     <div id="sidebar">
-        <h2>SURVEY & LIDAR HUD</h2>
+        <h2>SURVEY HUD</h2>
         
         <!-- 1. LIVEFEED STREAMS -->
         <div class="control-group">
@@ -220,74 +222,56 @@
             <div class="data-display" id="serial-output">Sensor: Stand-by</div>
         </div>
 
-        <!-- 3. LIDAR SCANS & HISTORISCHE MATEN -->
+        <!-- 3. VOLLEDIG SPECTRUM FILTERS & ZOOM -->
         <div class="control-group">
-            <label>3. LiDAR Engine & Historische Maten</label>
-            <button id="btn-toggle-lidar-state" class="active">⚡ LiDAR: AAN</button>
-            <select id="geo-unit-selector">
-                <optgroup label="🌊 Historische Zeemijlen / Maritiem">
-                    <option value="holland_zeemijl">Hollandse Zeemijl (5555.55 m)</option>
-                    <option value="spaans_legua">Spaanse Legua Maritima (5572 m)</option>
-                    <option value="engels_league">English Marine League (5556 m)</option>
-                    <option value="amsterdam_vadem">Amsterdamse Vadem (1.698 m)</option>
-                    <option value="engels_fathom">Engelse Fathom (1.8288 m)</option>
-                    <option value="kabellengte">Kabellengte (225.0 m)</option>
-                </optgroup>
-                <optgroup label="📐 Historische Landmaten">
-                    <option value="rijnland_roede">Rijnlandse Roede (3.767 m)</option>
-                    <option value="rijnland_voet">Rijnlandse Voet (0.314 m)</option>
-                    <option value="amsterdam_roede">Amsterdamse Roede (3.680 m)</option>
-                    <option value="amsterdam_voet">Amsterdamse Voet (0.283 m)</option>
-                    <option value="gunter_chain">Gunter's Chain / Ketting (20.1168 m)</option>
-                </optgroup>
-            </select>
-            
-            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>LiDAR Bereik:</span><span id="lidar-range-val" style="color:var(--accent-cyan); font-weight:bold;">120m</span>
-            </div>
-            <input type="range" id="lidar-range-slider" min="10" max="5000" step="10" value="120">
-            <div class="data-display" id="lidar-metrics">LiDAR Status: Actief&#10;Afstand: 120.0 m | 31.86 RR</div>
-        </div>
-
-        <!-- 4. VOLLEDIG SPECTRUM FILTERS & ZOOM (START 10X) -->
-        <div class="control-group">
-            <label>4. Spectraalfilters & Sharp-Zoom</label>
+            <label>3. Spectraalfilters & Sharp-Zoom</label>
             <select id="filter-selector">
                 <option value="filter-none">Standaard (Scherpte Boost)</option>
-                
                 <optgroup label="☀️ Zon- & Eclipsfilters">
-                    <option value="filter-sun-solar">☀️ Zonnefilter (High-Contrast)</option>
-                    <option value="filter-sun-halpha">🔴 H-Alpha 656nm (Zonnevlammen)</option>
-                    <option value="filter-sun-nd">🌑 Eclips ND-Filter (Zonneverduistering)</option>
+                    <option value="filter-sun-solar">☀️ Zonnefilter</option>
+                    <option value="filter-sun-halpha">🔴 H-Alpha 656nm</option>
+                    <option value="filter-sun-nd">🌑 Eclips ND-Filter</option>
                 </optgroup>
-
                 <optgroup label="🌙 Maan- & Astrometriefilters">
-                    <option value="filter-moon-lumi">🌙 Maanfilter (Luminantie / Zilver)</option>
-                    <option value="filter-moon-lpr">🌌 LPR-Filter (Lichtvervuiling Block)</option>
-                    <option value="filter-moon-ir">📡 Infrarood Pass (850nm Astrometrie)</option>
+                    <option value="filter-moon-lumi">🌙 Maanfilter</option>
+                    <option value="filter-moon-lpr">🌌 LPR-Filter</option>
+                    <option value="filter-moon-ir">📡 Infrarood Pass</option>
                 </optgroup>
-
                 <optgroup label="🟢 Nachtzicht & Sensorfilters">
-                    <option value="filter-night-gen3">🟢 Nachtzicht Gen-3 (IR Fosfor)</option>
-                    <option value="filter-flir-iron">🔥 FLIR Thermisch (Ironbow)</option>
-                    <option value="filter-flir-white">⚪ White-Hot Thermisch Contrast</option>
-                    <option value="filter-mono-edge">📐 Monochroom LiDAR Contour Edge</option>
+                    <option value="filter-night-gen3">🟢 Nachtzicht Gen-3</option>
+                    <option value="filter-flir-iron">🔥 FLIR Thermisch</option>
+                    <option value="filter-flir-white">⚪ White-Hot Thermisch</option>
+                    <option value="filter-mono-edge">📐 Monochroom Contour</option>
                 </optgroup>
             </select>
             
-            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
-                <span>Zoom:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">10x (Sharp)</span>
+            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa; margin-top:4px;">
+                <span>Zoom Presets:</span>
             </div>
-            <input type="range" id="zoom-slider" min="1" max="1500" step="0.5" value="10">
+            
+            <!-- Nieuwe Zoom Knoppen -->
+            <div class="zoom-grid">
+                <button class="zoom-btn" data-zoom="1">1x</button>
+                <button class="zoom-btn" data-zoom="2">2x</button>
+                <button class="zoom-btn" data-zoom="5">5x</button>
+                <button class="zoom-btn" data-zoom="10">10x</button>
+                <button class="zoom-btn" data-zoom="15">15x</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa;">
+                <span>Fijn-afstelling:</span><span id="zoom-val" style="color:var(--accent-orange); font-weight:bold;">1x</span>
+            </div>
+            <input type="range" id="zoom-slider" min="1" max="15" step="0.5" value="1">
+            
             <div class="checkbox-container" style="display:flex; align-items:center; gap:4px; margin-top:2px;">
                 <input type="checkbox" id="chk-auto-sharpness" checked style="width:auto; margin:0;">
-                <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur & Unsharp Mask</label>
+                <label for="chk-auto-sharpness" style="font-size:8px; color:#ddd; margin:0;">Adaptieve Anti-Blur</label>
             </div>
         </div>
 
-        <!-- 5. CAPTURE & RECORDING -->
+        <!-- 4. CAPTURE & RECORDING -->
         <div class="control-group">
-            <label>5. Opname</label>
+            <label>4. Opname</label>
             <div class="btn-grid">
                 <button id="btn-take-photo">📸 Foto</button>
                 <button id="btn-record-video">🎥 Record</button>
@@ -300,8 +284,7 @@
     <div id="viewport">
         <div id="feed-wrapper">
             <video id="video-feed" class="filter-none" autoplay playsinline muted></video>
-            
-            <canvas id="layer-lidar" class="hud-layer"></canvas>
+            <canvas id="layer-hud" class="hud-layer"></canvas>
         </div>
     </div>
 
@@ -312,8 +295,6 @@
         let lastRawHeading = 0.0;
         let isSerialConnected = false;
         let isMobileSensorActive = false;
-        let isLidarActive = true;
-        const CAMERA_FOV = 60;
 
         let cameraStream = null;
         let screenStream = null;
@@ -324,50 +305,34 @@
         const feedWrapper = document.getElementById('feed-wrapper');
         const video = document.getElementById('video-feed');
         const serialOutput = document.getElementById('serial-output');
-        const geoUnitSelector = document.getElementById('geo-unit-selector');
-        const lidarRangeSlider = document.getElementById('lidar-range-slider');
-        const lidarRangeVal = document.getElementById('lidar-range-val');
-        const lidarMetrics = document.getElementById('lidar-metrics');
+        
         const filterSelector = document.getElementById('filter-selector');
         const zoomSlider = document.getElementById('zoom-slider');
         const zoomVal = document.getElementById('zoom-val');
+        const zoomButtons = document.querySelectorAll('.zoom-btn');
         const chkAutoSharpness = document.getElementById('chk-auto-sharpness');
         const captureStatus = document.getElementById('capture-status');
+        
         const btnToggleCamera = document.getElementById('btn-toggle-camera');
         const btnToggleScreen = document.getElementById('btn-toggle-screen');
         const btnEnableSensor = document.getElementById('btn-enable-sensor');
-        const btnToggleLidarState = document.getElementById('btn-toggle-lidar-state');
 
-        const lidarCanvas = document.getElementById('layer-lidar');
-        const lidarCtx = lidarCanvas.getContext('2d');
-
-        const HISTORICAL_UNITS = {
-            holland_zeemijl: { factor: 5555.55, name: "Holl. Zeemijl", code: "HZM" },
-            spaans_legua:    { factor: 5572.00, name: "Legua Maritima", code: "LEG" },
-            engels_league:   { factor: 5556.00, name: "Marine League", code: "LEA" },
-            amsterdam_vadem: { factor: 1.698,   name: "Amst. Vadem", code: "AV" },
-            engels_fathom:   { factor: 1.8288,  name: "Fathom", code: "FTH" },
-            kabellengte:     { factor: 225.0,   name: "Kabellengte", code: "CBL" },
-            rijnland_roede:  { factor: 3.767,   name: "Rijnl. Roede", code: "RR" },
-            rijnland_voet:   { factor: 0.314,   name: "Rijnl. Voet", code: "RV" },
-            amsterdam_roede: { factor: 3.680,   name: "Amst. Roede", code: "AR" },
-            amsterdam_voet:  { factor: 0.283,   name: "Amst. Voet", code: "AVt" },
-            gunter_chain:    { factor: 20.1168, name: "Gunter Ketting", code: "CHN" }
-        };
+        const hudCanvas = document.getElementById('layer-hud');
+        const hudCtx = hudCanvas.getContext('2d');
 
         function resizeAllLayers() {
             const dpr = window.devicePixelRatio || 1;
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
 
-            lidarCanvas.width = w * dpr;
-            lidarCanvas.height = h * dpr;
-            lidarCanvas.style.width = `${w}px`;
-            lidarCanvas.style.height = `${h}px`;
-            lidarCtx.setTransform(1, 0, 0, 1, 0, 0);
-            lidarCtx.scale(dpr, dpr);
-            lidarCtx.imageSmoothingEnabled = true;
-            lidarCtx.imageSmoothingQuality = 'high';
+            hudCanvas.width = w * dpr;
+            hudCanvas.height = h * dpr;
+            hudCanvas.style.width = `${w}px`;
+            hudCanvas.style.height = `${h}px`;
+            hudCtx.setTransform(1, 0, 0, 1, 0, 0);
+            hudCtx.scale(dpr, dpr);
+            hudCtx.imageSmoothingEnabled = true;
+            hudCtx.imageSmoothingQuality = 'high';
         }
         window.addEventListener('resize', resizeAllLayers);
         resizeAllLayers();
@@ -436,9 +401,7 @@
 
         // === 2. DYNAMISCHE 3D ORIËNTATIE ===
         function computeTrueHeading(e) {
-            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-                return e.webkitCompassHeading;
-            }
+            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) return e.webkitCompassHeading;
             if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
                 const degToRad = Math.PI / 180;
                 const alpha = e.alpha * degToRad;
@@ -457,7 +420,6 @@
 
                 const screenAngle = (window.screen && window.screen.orientation) ? window.screen.orientation.angle : (window.orientation || 0);
                 compassHeading = (compassHeading + screenAngle) % 360;
-
                 return compassHeading;
             }
             return null;
@@ -481,7 +443,6 @@
                         window.addEventListener('deviceorientation', handleOrientation, true);
                         btnEnableSensor.classList.add('active');
                         btnEnableSensor.innerText = '📱 Sensor Actief';
-                        return true;
                     }
                 } catch (e) { console.error(e); }
             } else {
@@ -489,20 +450,13 @@
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 btnEnableSensor.classList.add('active');
                 btnEnableSensor.innerText = '📱 Sensor Actief';
-                return true;
             }
-            return false;
         }
 
         btnEnableSensor.addEventListener('click', async () => {
             sensorOffset = 0.0;
             await initSensor();
         });
-
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.addEventListener('deviceorientation', handleOrientation, true);
-        }
 
         document.getElementById('btn-connect-serial').addEventListener('click', async (e) => {
             if (!("serial" in navigator)) return alert("Web Serial vereist Chrome/Edge.");
@@ -535,10 +489,10 @@
             } catch (err) { console.error(err); }
         });
 
-        // === 3. BEGINSTAND 10X ZOOM & ADAPTIEVE SHARP ENGINE ===
+        // === 3. ZOOM & ADAPTIEVE SHARP ENGINE ===
         function applySharpZoom() {
             const z = parseFloat(zoomSlider.value);
-            zoomVal.innerText = z === 1 ? '1.0x (Start)' : (z >= 10 ? z.toFixed(0) + 'x (Sharp)' : z.toFixed(1) + 'x (HD)');
+            zoomVal.innerText = z + 'x';
 
             if (videoTrack && cameraCapabilities && cameraCapabilities.zoom) {
                 const hwMin = cameraCapabilities.zoom.min;
@@ -548,9 +502,7 @@
             }
 
             feedWrapper.style.transform = `scale(${z})`;
-
-            const selectedFilterClass = filterSelector.value;
-            video.className = selectedFilterClass;
+            video.className = filterSelector.value;
 
             if (chkAutoSharpness.checked && z > 1.5) {
                 video.style.imageRendering = z > 8 ? 'pixelated' : 'crisp-edges';
@@ -559,48 +511,23 @@
             }
         }
 
-        // Direct naar 10x
-        zoomSlider.value = 10;
+        // Koppel de nieuwe zoom knoppen
+        zoomButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                zoomSlider.value = e.target.getAttribute('data-zoom');
+                applySharpZoom();
+            });
+        });
+
+        zoomSlider.value = 1;
         applySharpZoom();
 
         zoomSlider.addEventListener('input', applySharpZoom);
         chkAutoSharpness.addEventListener('change', applySharpZoom);
         filterSelector.addEventListener('change', applySharpZoom);
 
-        // === 4. LIDAR AAN/UIT & METINGEN ===
-        btnToggleLidarState.addEventListener('click', () => {
-            isLidarActive = !isLidarActive;
-            if (isLidarActive) {
-                btnToggleLidarState.classList.remove('danger');
-                btnToggleLidarState.classList.add('active');
-                btnToggleLidarState.innerText = '⚡ LiDAR: AAN';
-            } else {
-                btnToggleLidarState.classList.remove('active');
-                btnToggleLidarState.classList.add('danger');
-                btnToggleLidarState.innerText = '⭕ LiDAR: UIT';
-            }
-            updateLidarMetrics();
-        });
 
-        function updateLidarMetrics() {
-            const m = parseFloat(lidarRangeSlider.value);
-            lidarRangeVal.innerText = m >= 1000 ? (m / 1000).toFixed(2) + 'km' : m.toFixed(0) + 'm';
-            const unitKey = geoUnitSelector.value;
-            const unit = HISTORICAL_UNITS[unitKey];
-            const converted = (m / unit.factor).toFixed(3);
-
-            if (isLidarActive) {
-                lidarMetrics.innerText = `LiDAR: Actief (${m.toFixed(1)} m)\nMaat: ${converted} ${unit.name} (${unit.code})`;
-            } else {
-                lidarMetrics.innerText = `LiDAR: Stand-by / Uitgeschakeld\nReferentie: ${converted} ${unit.name}`;
-            }
-        }
-
-        lidarRangeSlider.addEventListener('input', updateLidarMetrics);
-        geoUnitSelector.addEventListener('change', updateLidarMetrics);
-        updateLidarMetrics();
-
-        // === 5. OPNAME & FOTO ===
+        // === 4. OPNAME & FOTO ===
         document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) viewport.requestFullscreen().catch(e => alert(e.message));
             else document.exitFullscreen();
@@ -626,16 +553,14 @@
                 mCtx.drawImage(video, 0, 0, merged.width, merged.height);
                 mCtx.filter = 'none';
             }
-
-            if (isLidarActive) mCtx.drawImage(lidarCanvas, 0, 0);
-
+            mCtx.drawImage(hudCanvas, 0, 0);
             return merged;
         }
 
         document.getElementById('btn-take-photo').addEventListener('click', () => {
             const merged = getMergedLayersCanvas();
             const link = document.createElement('a');
-            link.download = `LiDAR_Sharp_Survey_${Date.now()}.png`;
+            link.download = `Survey_Foto_${Date.now()}.png`;
             link.href = merged.toDataURL('image/png');
             link.click();
             captureStatus.innerText = "Foto opgeslagen (HD)!";
@@ -658,8 +583,7 @@
                         mCtx.drawImage(video, 0, 0, merged.width, merged.height);
                         mCtx.filter = 'none';
                     }
-                    if (isLidarActive) mCtx.drawImage(lidarCanvas, 0, 0);
-                    
+                    mCtx.drawImage(hudCanvas, 0, 0);
                     if (isRecording) requestAnimationFrame(renderMergedStream);
                 }
 
@@ -670,7 +594,7 @@
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `LiDAR_Survey_Video_${Date.now()}.webm`;
+                    a.download = `Survey_Video_${Date.now()}.webm`;
                     a.click();
                     captureStatus.innerText = "Video gedownload!";
                 };
@@ -689,73 +613,34 @@
             }
         });
 
-        // === 6. HOOFD RENDER LOOP ===
+        // === 5. HOOFD RENDER LOOP (UITGEKLEDE HUD) ===
         function drawAllLayers() {
             const w = viewport.clientWidth;
             const h = viewport.clientHeight;
             const cx = w / 2;
             const cy = h / 2;
 
+            // Simuleer beweging als er geen echte sensor is aangesloten
             if (!isSerialConnected && !isMobileSensorActive) {
                 actueleAzimut = (actueleAzimut + 0.03) % 360;
             }
 
-            const currentLidarDist = parseFloat(lidarRangeSlider.value);
-            const currentUnit = HISTORICAL_UNITS[geoUnitSelector.value];
-            const currentHistoricalVal = (currentLidarDist / currentUnit.factor).toFixed(2);
+            hudCtx.clearRect(0, 0, w, h);
 
-            lidarCtx.clearRect(0, 0, w, h);
+            // Simpel dradenkruis (Center Crosshair)
+            hudCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
+            hudCtx.lineWidth = 1;
+            hudCtx.beginPath();
+            hudCtx.moveTo(cx - 15, cy);
+            hudCtx.lineTo(cx + 15, cy);
+            hudCtx.moveTo(cx, cy - 15);
+            hudCtx.lineTo(cx, cy + 15);
+            hudCtx.stroke();
 
-            // --- LIDAR POINTCLOUD & METINGEN ---
-            if (isLidarActive) {
-                const lCtx = lidarCtx;
-                lCtx.strokeStyle = 'rgba(0, 245, 212, 0.4)';
-                lCtx.lineWidth = 1.2;
-
-                const lidarRings = [40, 80, 130, 190];
-                lidarRings.forEach((r, idx) => {
-                    lCtx.beginPath();
-                    lCtx.arc(cx, cy, r, 0, 2 * Math.PI);
-                    lCtx.setLineDash([4, 4]);
-                    lCtx.stroke();
-                    lCtx.setLineDash([]);
-                    
-                    let distRing = (currentLidarDist * ((idx + 1) / 4)).toFixed(0);
-                    lCtx.fillStyle = 'rgba(0, 245, 212, 0.7)';
-                    lCtx.font = '8px "Courier New"';
-                    lCtx.fillText(`${distRing}m`, cx + r + 4, cy - 2);
-                });
-
-                const numPoints = 18;
-                for (let i = 0; i < numPoints; i++) {
-                    const angle = (i * (360 / numPoints) + actueleAzimut * 1.5) * (Math.PI / 180);
-                    const distRatio = 0.3 + 0.6 * Math.sin(i * 3.7 + actueleAzimut * 0.05);
-                    const px = cx + Math.cos(angle) * (180 * distRatio);
-                    const py = cy + Math.sin(angle) * (180 * distRatio);
-
-                    lCtx.beginPath();
-                    lCtx.arc(px, py, 2.5, 0, 2 * Math.PI);
-                    lCtx.fillStyle = i % 2 === 0 ? 'var(--accent-cyan)' : 'var(--accent-green)';
-                    lCtx.fill();
-                }
-
-                lCtx.strokeStyle = 'var(--accent-cyan)';
-                lCtx.lineWidth = 1.5;
-                lCtx.strokeRect(cx - 25, cy - 25, 50, 50);
-
-                lCtx.fillStyle = 'rgba(15, 22, 28, 0.85)';
-                lCtx.fillRect(cx + 35, cy - 35, 210, 52);
-                lCtx.strokeStyle = 'var(--accent-cyan)';
-                lCtx.strokeRect(cx + 35, cy - 35, 210, 52);
-
-                lCtx.fillStyle = 'var(--accent-cyan)';
-                lCtx.font = 'bold 10px "Courier New"';
-                lCtx.fillText(`⚡ LIDAR METING ACTIEF`, cx + 42, cy - 20);
-                lCtx.fillStyle = '#fff';
-                lCtx.fillText(`METRISCH : ${currentLidarDist.toFixed(1)} m`, cx + 42, cy - 6);
-                lCtx.fillStyle = 'var(--accent-yellow)';
-                lCtx.fillText(`HISTORISCH: ${currentHistoricalVal} ${currentUnit.code} (${currentUnit.name})`, cx + 42, cy + 8);
-            }
+            // Azimut Weergave in de HUD
+            hudCtx.fillStyle = 'var(--accent-cyan)';
+            hudCtx.font = 'bold 12px "Courier New"';
+            hudCtx.fillText(`AZIMUT: ${actueleAzimut.toFixed(1)}°`, cx + 25, cy + 5);
 
             requestAnimationFrame(drawAllLayers);
         }
