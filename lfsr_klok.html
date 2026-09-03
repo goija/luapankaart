@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6-Bit Galois LFSR Faseruimte Klok</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #58a6ff; }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            max-width: 1200px;
+        }
+        canvas {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.2);
+        }
+        .dashboard {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+        }
+        .highlight-54 { color: #ff7b72; font-weight: bold; }
+        .highlight-48 { color: #d2a8ff; font-weight: bold; }
+        .highlight-4 { color: #79c0ff; font-weight: bold; }
+        .highlight-2 { color: #a5d6ff; font-weight: bold; }
+        select, button {
+            background-color: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button:hover { background-color: #30363d; }
+    </style>
+</head>
+<body>
+
+    <h1>{54.240.4.2} LFSR Implosie Klok</h1>
+    
+    <div class="container">
+        <!-- Radiale Klok Visualisatie -->
+        <canvas id="lfsrCanvas" width="600" height="600"></canvas>
+
+        <!-- Berekeningen en Dashboard -->
+        <div class="dashboard">
+            <h3>LFSR Configuratie</h3>
+            <label>Polynoom (Hex Mask):</label>
+            <select id="polySelect">
+                <option value="33">0x21 (x^6 + x + 1)</option>
+                <option value="48">0x30 (x^6 + x^5 + 1)</option>
+                <option value="57">0x39 (x^6 + x^5 + x^4 + x^3 + 1)</option>
+            </select>
+            <button onclick="runSimulation()">Genereer Cyclus & Bereken Δt</button>
+
+            <h3>Klok Intervallen (Δt)</h3>
+            <div id="results"></div>
+            
+            <p style="font-size: 0.85em; color: #8b949e; margin-top: 20px;">
+                * Δt wordt berekend modulo 63. De rode pijl toont de start (KW 57), paars en blauw tonen de 18-schillen implosie naar het nulpunt.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('lfsrCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radius = 260;
+
+        // De vier IP/Hexagram Toestanden
+        const TARGETS = [54, 48, 4, 2];
+        const COLORS = { 54: '#ff7b72', 48: '#d2a8ff', 4: '#79c0ff', 2: '#a5d6ff' };
+        const LABELS = { 54: 'KW57', 48: 'KW20', 4: 'KW15', 2: 'KW7' };
+
+        function runSimulation() {
+            const poly = parseInt(document.getElementById('polySelect').value);
+            let state = 1; // Begin altijd bij 1
+            let cycle = [];
+            let t_map = {};
+
+            // 1. Draai de 6-bit Galois LFSR
+            for (let t = 0; t < 63; t++) {
+                cycle.push(state);
+                t_map[state] = t;
+                
+                let lsb = state & 1;
+                state >>= 1;
+                if (lsb) {
+                    state ^= poly;
+                }
+            }
+
+            // 2. Bereken de intervallen (Δt)
+            let t54 = t_map[54];
+            let t48 = t_map[48];
+            let t4  = t_map[4];
+            let t2  = t_map[2];
+
+            let dt_54_48 = (t48 - t54 + 63) % 63;
+            let dt_48_4  = (t4 - t48 + 63) % 63;
+            let dt_4_2   = (t2 - t4 + 63) % 63;
+
+            // Update DOM
+            let resHTML = `
+                <p>Tijdstip <span class="highlight-54">t(${TARGETS[0]})</span> = Kloktik ${t54}</p>
+                <p>Tijdstip <span class="highlight-48">t(${TARGETS[1]})</span> = Kloktik ${t48}</p>
+                <p>Tijdstip <span class="highlight-4">t(${TARGETS[2]})</span> = Kloktik ${t4}</p>
+                <p>Tijdstip <span class="highlight-2">t(${TARGETS[3]})</span> = Kloktik ${t2}</p>
+                <hr style="border-color: #30363d;">
+                <p><strong>Δt (54 → 48):</strong> ${dt_54_48} tikken</p>
+                <p><strong>Δt (48 → 4) [Implosie]:</strong> ${dt_48_4} tikken</p>
+                <p><strong>Δt (4 → 2) [Naar Kern]:</strong> ${dt_4_2} tikken</p>
+            `;
+            document.getElementById('results').innerHTML = resHTML;
+
+            // 3. Render Klok
+            renderClock(cycle, t_map);
+        }
+
+        function renderClock(cycle, t_map) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Teken de basisring
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Teken alle 63 knooppunten
+            for (let i = 0; i < 63; i++) {
+                let angle = (i / 63) * 2 * Math.PI - Math.PI / 2;
+                let x = cx + Math.cos(angle) * radius;
+                let y = cy + Math.sin(angle) * radius;
+                
+                let state = cycle[i];
+                let isTarget = TARGETS.includes(state);
+
+                ctx.beginPath();
+                ctx.arc(x, y, isTarget ? 8 : 3, 0, 2 * Math.PI);
+                ctx.fillStyle = isTarget ? COLORS[state] : '#8b949e';
+                ctx.fill();
+
+                if (isTarget) {
+                    ctx.fillStyle = COLORS[state];
+                    ctx.font = "14px Courier New";
+                    let textOffX = Math.cos(angle) * 25;
+                    let textOffY = Math.sin(angle) * 25;
+                    ctx.fillText(`${state} (${LABELS[state]})`, x + textOffX - 20, y + textOffY + 5);
+                }
+            }
+
+            // Teken de verbindingen van de Implosie (54 -> 48 -> 4 -> 2)
+            drawArrow(t_map[54], t_map[48], '#ff7b72');
+            drawArrow(t_map[48], t_map[4], '#d2a8ff');
+            drawArrow(t_map[4], t_map[2], '#79c0ff');
+        }
+
+        function drawArrow(t_start, t_end, color) {
+            let a1 = (t_start / 63) * 2 * Math.PI - Math.PI / 2;
+            let a2 = (t_end / 63) * 2 * Math.PI - Math.PI / 2;
+            
+            let x1 = cx + Math.cos(a1) * radius;
+            let y1 = cy + Math.sin(a1) * radius;
+            let x2 = cx + Math.cos(a2) * radius;
+            let y2 = cy + Math.sin(a2) * radius;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            // Curvec to center for dramatic effect
+            ctx.quadraticCurveTo(cx, cy, x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Init
+        window.onload = runSimulation;
+    </script>
+</body>
+</html>
